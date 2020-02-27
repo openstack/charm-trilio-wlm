@@ -1,0 +1,9 @@
+options:
+  triliovault-pkg-source:
+    type: string
+    default: "deb [trusted=yes] https://apt.fury.io/triliovault-python3/ /"
+    description: Repository address of triliovault packages
+  trilio-user-id:
+    type: string
+    default:
+    description: Unique TrilioVault User ID
