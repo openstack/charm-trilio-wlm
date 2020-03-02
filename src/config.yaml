@@ -7,3 +7,19 @@ options:
     type: string
     default:
     description: Unique TrilioVault User ID
+  backup-target-type:
+    type: string
+    default: nfs
+    description: |
+      Type of backup target.
+      Valid types are-
+        - nfs
+        - s3
+  nfs-options:
+    type: string
+    default: nolock,soft,timeo=180,intr,lookupcache=none
+    description: NFS Options
+  nfs-shares:
+    type: string
+    default:
+    description: NFS Shares mount source path
