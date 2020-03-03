@@ -1,5 +1,6 @@
 import collections
 import subprocess
+import pathlib
 
 import charmhelpers.core.hookenv as hookenv
 import charms_openstack.charm
@@ -69,6 +70,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         'cinder',
     ]
 
+    workloadmgr_install_dir = '/usr/lib/python3/dist-packages/workloadmgr'
+
     def __init__(self, release=None, **kwargs):
         super().__init__(release='stein', **kwargs)
 
@@ -77,8 +80,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     def get_database_setup(self):
         return [{
-            'database': 'workloadmgr',
-            'username': 'workloadmgr',
+            'database': self.service_type,
+            'username': self.service_type,
             'hostname': hookenv.network_get_primary_address('shared-db'),
         }]
 
@@ -120,23 +123,38 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
             self.api_port(self.default_service,
                           os_ip.INTERNAL)
         )
-
-    def db_sync(self):
+    
+    @property
+    def mysql_dump_file(self):
+        """Return the location of the worloadmgr database schema sql file
+        
+        :returns: full path to wlm_schema.sql from within workloadmgr install
+        :rtype: str
+        """
+        paths = list(pathlib.Path(self.workloadmgr_install_dir).glob('**/wlm_schema.sql'))
+        return paths[0]
+        
+    def db_sync(self, shared_db):
         """Perform a database sync using the command defined in the
         self.sync_cmd attribute. The services defined in self.services are
         restarted after the database sync.
+        
+        :param shared_db: mysql-shared charm interface
+        :type shared_db: MySQLSharedRequires
         """
         if not self.db_sync_done() and hookenv.is_leader():
-            # TODO finish me its to hard for 1645
-            shared_db = None
             sync_cmd = [
                 'mysql',
-                '-u{}'.format(shared_db.username),
-                '-p{}'.format(shared_db.password),
-                shared_db.hostname,
-                'workloadmgr'
+                '--user={}'.format(shared_db.username()),
+                '--password={}'.format(shared_db.password()),
+                '--host={}'.format(shared_db.db_host()),
+                self.service_type,
             ]
-            subprocess.check_call(sync_cmd)
+            with open(self.mysql_dump_file, 'rb') as db_schema:
+                subprocess.check_output(
+                    sync_cmd,
+                    input=db_schema.read()
+                )
             hookenv.leader_set({'db-sync-done': True})
             # Restart services immediately after db sync as
             # render_domain_config needs a working system

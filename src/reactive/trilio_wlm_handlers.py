@@ -45,9 +45,12 @@ def render_config(*args):
 
 # db_sync checks if sync has been done so rerunning is a noop
 @reactive.when('config.rendered')
-def init_db():
+@reactive.when('shared-db.available')
+def init_db(shared_db):
+    # NOTE(jamespage): use of shared_db here is a hack until
+    # trilio remove the need to use a mysqldump to create the DB
     with charm.provide_charm_instance() as charm_class:
-        charm_class.db_sync()
+        charm_class.db_sync(shared_db)
 
 
 @reactive.when('ha.connected')
