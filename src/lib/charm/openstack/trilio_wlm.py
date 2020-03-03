@@ -1,9 +1,7 @@
 import collections
-import socket
 import subprocess
 
 import charmhelpers.core.hookenv as hookenv
-import charmhelpers.fetch as fetch
 import charms_openstack.charm
 import charms_openstack.ip as os_ip
 
@@ -57,15 +55,22 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         ]),
     }
 
-
     sync_cmd = ['true']
 
     user = 'root'
     group = 'nova'
 
+    required_services = [
+        'nova',
+        'neutron',
+        'glance',
+        'cinderv2',
+        'cinderv3',
+        'cinder',
+    ]
+
     def __init__(self, release=None, **kwargs):
         super().__init__(release='stein', **kwargs)
-
 
     def get_amqp_credentials(self):
         return ('triliowlm', 'triliowlm')
@@ -78,8 +83,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         }]
 
     def configure_source(self):
-        with open ('/etc/apt/sources.list.d/trilio-wlm.list',
-                   'w') as tsources:
+        with open('/etc/apt/sources.list.d/trilio-wlm.list',
+                  'w') as tsources:
             tsources.write(hookenv.config('triliovault-pkg-source'))
         super().configure_source()
 
@@ -115,3 +120,24 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
             self.api_port(self.default_service,
                           os_ip.INTERNAL)
         )
+
+    def db_sync(self):
+        """Perform a database sync using the command defined in the
+        self.sync_cmd attribute. The services defined in self.services are
+        restarted after the database sync.
+        """
+        if not self.db_sync_done() and hookenv.is_leader():
+            # TODO finish me its to hard for 1645
+            shared_db = None
+            sync_cmd = [
+                'mysql',
+                '-u{}'.format(shared_db.username),
+                '-p{}'.format(shared_db.password),
+                shared_db.hostname,
+                'workloadmgr'
+            ]
+            subprocess.check_call(sync_cmd)
+            hookenv.leader_set({'db-sync-done': True})
+            # Restart services immediately after db sync as
+            # render_domain_config needs a working system
+            self.restart_all()

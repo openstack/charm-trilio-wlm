@@ -28,6 +28,7 @@ charm.use_defaults(
     'config.changed',
     'update-status')
 
+
 @reactive.when('shared-db.available')
 @reactive.when('identity-service.available')
 @reactive.when('amqp.available')
@@ -41,11 +42,13 @@ def render_config(*args):
         charm_class.assess_status()
     reactive.set_state('config.rendered')
 
+
 # db_sync checks if sync has been done so rerunning is a noop
 @reactive.when('config.rendered')
 def init_db():
     with charm.provide_charm_instance() as charm_class:
         charm_class.db_sync()
+
 
 @reactive.when('ha.connected')
 def cluster_connected(hacluster):
@@ -53,3 +56,12 @@ def cluster_connected(hacluster):
     with charm.provide_charm_instance() as charm_class:
         charm_class.configure_ha_resources(hacluster)
         charm_class.assess_status()
+
+
+@reactive.when('identity-service.connected')
+def request_endpoint_notification(identity_service):
+    """Request notification about endpoint changes"""
+    with charm.provide_charm_instance() as charm_class:
+        identity_service.request_notification(
+            charm_class.required_services
+        )
