@@ -20,18 +20,19 @@ import charms.reactive as reactive
 import charm.openstack.trilio_wlm as trilio_wlm  # noqa
 
 charm.use_defaults(
-    'charm.installed',
-    'amqp.connected',
-    'shared-db.connected',
-    'identity-service.connected',
-    'identity-service.available',  # enables SSL support
-    'config.changed',
-    'update-status')
+    "charm.installed",
+    "amqp.connected",
+    "shared-db.connected",
+    "identity-service.connected",
+    "identity-service.available",  # enables SSL support
+    "config.changed",
+    "update-status",
+)
 
 
-@reactive.when('shared-db.available')
-@reactive.when('identity-service.available')
-@reactive.when('amqp.available')
+@reactive.when("shared-db.available")
+@reactive.when("identity-service.available")
+@reactive.when("amqp.available")
 def render_config(*args):
     """Render the configuration for charm when all the interfaces are
     available.
@@ -40,20 +41,16 @@ def render_config(*args):
         charm_class.upgrade_if_available(args)
         charm_class.render_with_interfaces(args)
         charm_class.assess_status()
-    reactive.set_state('config.rendered')
+    reactive.set_state("config.rendered")
 
 
-# db_sync checks if sync has been done so rerunning is a noop
-@reactive.when('config.rendered')
-@reactive.when('shared-db.available')
-def init_db(shared_db):
-    # NOTE(jamespage): use of shared_db here is a hack until
-    # trilio remove the need to use a mysqldump to create the DB
+@reactive.when("config.rendered")
+def init_db():
     with charm.provide_charm_instance() as charm_class:
-        charm_class.db_sync(shared_db)
+        charm_class.db_sync()
 
 
-@reactive.when('ha.connected')
+@reactive.when("ha.connected")
 def cluster_connected(hacluster):
     """Configure HA resources in corosync"""
     with charm.provide_charm_instance() as charm_class:
@@ -61,10 +58,8 @@ def cluster_connected(hacluster):
         charm_class.assess_status()
 
 
-@reactive.when('identity-service.connected')
+@reactive.when("identity-service.connected")
 def request_endpoint_notification(identity_service):
     """Request notification about endpoint changes"""
     with charm.provide_charm_instance() as charm_class:
-        identity_service.request_notification(
-            charm_class.required_services
-        )
+        identity_service.request_notification(charm_class.required_services)
