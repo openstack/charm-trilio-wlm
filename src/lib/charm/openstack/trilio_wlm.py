@@ -56,7 +56,12 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         ]),
     }
 
-    sync_cmd = ['true']
+    sync_cmd = [
+        'alembic',
+        '--config=/etc/workloadmgr/workloadmgr.conf',
+        'upgrade',
+        'head',
+    ]
 
     user = 'root'
     group = 'nova'
