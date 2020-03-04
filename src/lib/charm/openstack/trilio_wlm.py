@@ -22,7 +22,11 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     packages = ["workloadmgr", "python-apt"]
 
     api_ports = {
-        "workloadmgr-api": {os_ip.PUBLIC: 8780, os_ip.ADMIN: 8780, os_ip.INTERNAL: 8780}
+        "workloadmgr-api": {
+            os_ip.PUBLIC: 8780,
+            os_ip.ADMIN: 8780,
+            os_ip.INTERNAL: 8780,
+        }
     }
 
     service_type = "workloadmgr"
@@ -37,14 +41,28 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     release_pkg = "workloadmgr"
 
-    package_codenames = {"workloadmgr": collections.OrderedDict([("3", "stein")])}
+    package_codenames = {
+        "workloadmgr": collections.OrderedDict([("3", "stein")])
+    }
 
-    sync_cmd = ["alembic", "--config={}".format(workloadmgr_conf), "upgrade", "head"]
+    sync_cmd = [
+        "alembic",
+        "--config={}".format(workloadmgr_conf),
+        "upgrade",
+        "head",
+    ]
 
     user = "root"
     group = "nova"
 
-    required_services = ["nova", "neutron", "glance", "cinderv2", "cinderv3", "cinder"]
+    required_services = [
+        "nova",
+        "neutron",
+        "glance",
+        "cinderv2",
+        "cinderv3",
+        "cinder",
+    ]
 
     workloadmgr_install_dir = "/usr/lib/python3/dist-packages/workloadmgr"
 
