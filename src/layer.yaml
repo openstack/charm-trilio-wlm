@@ -1,6 +1,5 @@
 includes:
   - 'layer:openstack-api'
-  - 'interface:keystone-admin'
 options:
   basic:
     use_venv: True

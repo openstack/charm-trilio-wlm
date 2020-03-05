@@ -64,7 +64,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     services = ["wlm-api", "wlm-scheduler", "wlm-workloads"]
 
     required_relations = [
-        "shared-db", "amqp", "identity-service", "identity-admin"
+        "shared-db", "amqp", "identity-service"
     ]
 
     restart_map = {

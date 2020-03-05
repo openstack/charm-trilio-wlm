@@ -8,6 +8,3 @@ tags:
   - openstack
 series:
   - bionic
-requires:
-  identity-admin:
-    interface: keystone-admin
