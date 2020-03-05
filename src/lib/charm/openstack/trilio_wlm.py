@@ -1,10 +1,59 @@
 import collections
+import functools
 import subprocess
-import pathlib
+import tenacity
 
 import charmhelpers.core.hookenv as hookenv
 import charms_openstack.charm
+import charms_openstack.adapters
 import charms_openstack.ip as os_ip
+
+
+@tenacity.retry(
+    stop=tenacity.stop_after_attempt(7),
+    wait=tenacity.wait_exponential(multiplier=1, min=4, max=10),
+)
+def _retrieve_endpoint_url(service):
+    region = hookenv.config("region")
+    endpoint = subprocess.check_output(
+        [
+            "openstack",
+            "--os-cloud=local",
+            "endpoint",
+            "list",
+            "--service",
+            service,
+            "--interface",
+            "internal",
+            "--region",
+            region,
+            "-f",
+            "value",
+            "-c",
+            "URL",
+        ]
+    ).decode("utf-8")
+    return endpoint.strip()
+
+
+@charms_openstack.adapters.config_property
+def neutron_url(config):
+    return _retrieve_endpoint_url('neutron')
+
+
+@charms_openstack.adapters.config_property
+def cinder_url(config):
+    return _retrieve_endpoint_url('cinderv2')
+
+
+@charms_openstack.adapters.config_property
+def glance_url(config):
+    return _retrieve_endpoint_url('glance')
+
+
+@charms_openstack.adapters.config_property
+def nova_url(config):
+    return _retrieve_endpoint_url('nova')
 
 
 class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
@@ -14,6 +63,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     workloadmgr_conf = "/etc/workloadmgr/workloadmgr.conf"
     api_paste_ini = "/etc/workloadmgr/api-paste.ini"
+    alembic_ini = "/etc/workloadmgr/alembic.ini"
+    clouds_yaml = "/etc/openstack/clouds.yaml"
 
     # First release supported
     release = "stein"
@@ -35,7 +86,12 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     required_relations = ["shared-db", "amqp", "identity-service"]
 
-    restart_map = {workloadmgr_conf: services, api_paste_ini: ["wlm-api"]}
+    restart_map = {
+        clouds_yaml: [],
+        workloadmgr_conf: services,
+        api_paste_ini: ["wlm-api"],
+        alembic_ini: [],
+    }
 
     ha_resources = ["vips", "haproxy"]
 
