@@ -48,7 +48,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     release = "stein"
 
     # List of packages to install for this charm
-    packages = ["workloadmgr", "python-apt"]
+    # NOTE(jamespage): nova-common ensures a consistent UID is use for the nova user.
+    packages = ["nova-common", "workloadmgr", "python-apt"]
 
     api_ports = {
         "workloadmgr-api": {
@@ -62,7 +63,9 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     default_service = "workloadmgr-api"
     services = ["wlm-api", "wlm-scheduler", "wlm-workloads"]
 
-    required_relations = ["shared-db", "amqp", "identity-service"]
+    required_relations = [
+        "shared-db", "amqp", "identity-service", "identity-admin"
+    ]
 
     restart_map = {
         workloadmgr_conf: services,

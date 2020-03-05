@@ -31,6 +31,7 @@ charm.use_defaults(
 
 
 @reactive.when("shared-db.available")
+@reactive.when("identity-admin.available")
 @reactive.when("identity-service.available")
 @reactive.when("amqp.available")
 def render_config(*args):
