@@ -1,7 +1,6 @@
 import collections
 import functools
 import subprocess
-import tenacity
 
 import charmhelpers.core.hookenv as hookenv
 import charms_openstack.charm
@@ -9,51 +8,31 @@ import charms_openstack.adapters
 import charms_openstack.ip as os_ip
 
 
-@tenacity.retry(
-    stop=tenacity.stop_after_attempt(7),
-    wait=tenacity.wait_exponential(multiplier=1, min=4, max=10),
-)
-def _retrieve_endpoint_url(service):
-    region = hookenv.config("region")
-    endpoint = subprocess.check_output(
-        [
-            "openstack",
-            "--os-cloud=local",
-            "endpoint",
-            "list",
-            "--service",
-            service,
-            "--interface",
-            "internal",
-            "--region",
-            region,
-            "-f",
-            "value",
-            "-c",
-            "URL",
-        ]
-    ).decode("utf-8")
-    return endpoint.strip()
+def _get_internal_url(identity_service, service):
+    ep_catalog = identity_service.relation.endpoint_checksums()
+    if service in ep_catalog:
+        return ep_catalog[service]['internal']
+    return None
 
 
-@charms_openstack.adapters.config_property
-def neutron_url(config):
-    return _retrieve_endpoint_url('neutron')
+@charms_openstack.adapters.adapter_property('identity-service')
+def neutron_url(identity_service):
+    return _get_internal_url(identity_service, 'neutron')
 
 
-@charms_openstack.adapters.config_property
-def cinder_url(config):
-    return _retrieve_endpoint_url('cinderv2')
+@charms_openstack.adapters.adapter_property('identity-service')
+def cinder_url(identity_service):
+    return _get_internal_url(identity_service, 'cinderv2')
 
 
-@charms_openstack.adapters.config_property
-def glance_url(config):
-    return _retrieve_endpoint_url('glance')
+@charms_openstack.adapters.adapter_property('identity-service')
+def glance_url(identity_service):
+    return _get_internal_url(identity_service, 'glance')
 
 
-@charms_openstack.adapters.config_property
-def nova_url(config):
-    return _retrieve_endpoint_url('nova')
+@charms_openstack.adapters.adapter_property('identity-service')
+def nova_url(identity_service):
+    return _get_internal_url(identity_service, 'nova')
 
 
 class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
@@ -64,7 +43,6 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     workloadmgr_conf = "/etc/workloadmgr/workloadmgr.conf"
     api_paste_ini = "/etc/workloadmgr/api-paste.ini"
     alembic_ini = "/etc/workloadmgr/alembic.ini"
-    clouds_yaml = "/etc/openstack/clouds.yaml"
 
     # First release supported
     release = "stein"
@@ -87,7 +65,6 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     required_relations = ["shared-db", "amqp", "identity-service"]
 
     restart_map = {
-        clouds_yaml: [],
         workloadmgr_conf: services,
         api_paste_ini: ["wlm-api"],
         alembic_ini: [],
@@ -121,6 +98,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     ]
 
     workloadmgr_install_dir = "/usr/lib/python3/dist-packages/workloadmgr"
+    
+    endpoint_template = "{}:{}/v1/$(tenant_id)s"
 
     def __init__(self, release=None, **kwargs):
         super().__init__(release="stein", **kwargs)
@@ -147,7 +126,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         """Return the public endpoint URL for the default service as specified
         in the self.default_service attribute
         """
-        return "{}:{}/v1/$(tenant_id)s".format(
+        return self.endpoint_template.format(
             os_ip.canonical_url(os_ip.PUBLIC),
             self.api_port(self.default_service, os_ip.PUBLIC),
         )
@@ -157,7 +136,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         """Return the admin endpoint URL for the default service as specificed
         in the self.default_service attribute
         """
-        return "{}:{}/v1/$(tenant_id)s".format(
+        return self.endpoint_template.format(
             os_ip.canonical_url(os_ip.ADMIN),
             self.api_port(self.default_service, os_ip.ADMIN),
         )
@@ -167,7 +146,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         """Return the internal internal endpoint URL for the default service as
         specificated in the self.default_service attribtue
         """
-        return "{}:{}/v1/$(tenant_id)s".format(
+        return self.endpoint_template.format(
             os_ip.canonical_url(os_ip.INTERNAL),
             self.api_port(self.default_service, os_ip.INTERNAL),
         )
