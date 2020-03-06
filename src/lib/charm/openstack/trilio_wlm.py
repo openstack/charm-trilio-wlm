@@ -1,6 +1,18 @@
+# Copyright 2020 Canonical Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import collections
-import functools
-import subprocess
 
 import charmhelpers.core.hookenv as hookenv
 import charms_openstack.charm
@@ -11,28 +23,28 @@ import charms_openstack.ip as os_ip
 def _get_internal_url(identity_service, service):
     ep_catalog = identity_service.relation.endpoint_checksums()
     if service in ep_catalog:
-        return ep_catalog[service]['internal']
+        return ep_catalog[service]["internal"]
     return None
 
 
-@charms_openstack.adapters.adapter_property('identity-service')
+@charms_openstack.adapters.adapter_property("identity-service")
 def neutron_url(identity_service):
-    return _get_internal_url(identity_service, 'neutron')
+    return _get_internal_url(identity_service, "neutron")
 
 
-@charms_openstack.adapters.adapter_property('identity-service')
+@charms_openstack.adapters.adapter_property("identity-service")
 def cinder_url(identity_service):
-    return _get_internal_url(identity_service, 'cinderv2')
+    return _get_internal_url(identity_service, "cinderv2")
 
 
-@charms_openstack.adapters.adapter_property('identity-service')
+@charms_openstack.adapters.adapter_property("identity-service")
 def glance_url(identity_service):
-    return _get_internal_url(identity_service, 'glance')
+    return _get_internal_url(identity_service, "glance")
 
 
-@charms_openstack.adapters.adapter_property('identity-service')
+@charms_openstack.adapters.adapter_property("identity-service")
 def nova_url(identity_service):
-    return _get_internal_url(identity_service, 'nova')
+    return _get_internal_url(identity_service, "nova")
 
 
 class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
@@ -51,6 +63,9 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     # NOTE(jamespage): nova-common ensures a consistent UID is use for the nova user.
     packages = ["nova-common", "workloadmgr", "python-apt"]
 
+    # Ensure we use the right package for versioning
+    version_package = "workloadmgr"
+
     api_ports = {
         "workloadmgr-api": {
             os_ip.PUBLIC: 8780,
@@ -63,9 +78,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     default_service = "workloadmgr-api"
     services = ["wlm-api", "wlm-scheduler", "wlm-workloads"]
 
-    required_relations = [
-        "shared-db", "amqp", "identity-service"
-    ]
+    required_relations = ["shared-db", "amqp", "identity-service"]
 
     restart_map = {
         workloadmgr_conf: services,
@@ -101,7 +114,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     ]
 
     workloadmgr_install_dir = "/usr/lib/python3/dist-packages/workloadmgr"
-    
+
     endpoint_template = "{}:{}/v1/$(tenant_id)s"
 
     def __init__(self, release=None, **kwargs):

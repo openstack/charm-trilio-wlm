@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd
+# Copyright 2020 Canonical Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,7 @@
 import charms_openstack.charm as charm
 import charms.reactive as reactive
 
-# This charm's library contains all of the handler code associated with
-# sdn_charm
+# This charm's library contains all of the handler code for this charm
 import charm.openstack.trilio_wlm as trilio_wlm  # noqa
 
 charm.use_defaults(
@@ -31,7 +30,6 @@ charm.use_defaults(
 
 
 @reactive.when("shared-db.available")
-@reactive.when("identity-admin.available")
 @reactive.when("identity-service.available")
 @reactive.when("amqp.available")
 def render_config(*args):
