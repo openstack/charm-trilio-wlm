@@ -1,5 +1,5 @@
 name: trilio-wlm
-display-name: TrilioVault Workload Manager (WLM)
+display-name: TrilioVault Workload Manager
 maintainer: OpenStack Charmers <openstack-discuss@lists.openstack.org>
 summary: TrilioVault Workload Manager Service
 description: |
