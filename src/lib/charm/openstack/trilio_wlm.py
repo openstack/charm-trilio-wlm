@@ -48,6 +48,12 @@ def nova_url(identity_service):
     return _get_internal_url(identity_service, "nova")
 
 
+class IdentityServiceIncompleteException(Exception):
+    """Signal that the identity-service relation is not complete"""
+
+    pass
+
+
 class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     # Internal name of charm
@@ -126,12 +132,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         return ("triliowlm", "triliowlm")
 
     def get_database_setup(self):
-        return [
-            {
-                "database": self.service_type,
-                "username": self.service_type,
-            }
-        ]
+        return [{"database": self.service_type, "username": self.service_type}]
 
     def configure_source(self):
         with open("/etc/apt/sources.list.d/trilio-wlm.list", "w") as tsources:
@@ -143,45 +144,52 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         """Return the public endpoint URL for the default service as specified
         in the self.default_service attribute
         """
-        return self.endpoint_template.format(
-            super().public_url
-        )
+        return self.endpoint_template.format(super().public_url)
 
     @property
     def admin_url(self):
         """Return the admin endpoint URL for the default service as specificed
         in the self.default_service attribute
         """
-        return self.endpoint_template.format(
-            super().admin_url
-        )
+        return self.endpoint_template.format(super().admin_url)
 
     @property
     def internal_url(self):
         """Return the internal internal endpoint URL for the default service as
         specificated in the self.default_service attribtue
         """
-        return self.endpoint_template.format(
-            super().internal_url
-        )
+        return self.endpoint_template.format(super().internal_url)
 
     def create_trust(self, identity_service, cloud_admin_password):
         """Create trust between Trilio WLM service user and Cloud Admin
         """
+        if not identity_service.base_data_complete():
+            raise IdentityServiceIncompleteException(
+                "identity-service relation incomplete"
+            )
         # NOTE(jamespage): hardcode of admin username here may be brittle
-        subprocess.check_call([
-            'workloadmgr',
-            '--os-username', 'admin',
-            '--os-password', cloud_admin_password,
-            '--os-auth-url', "{}://{}:{}/v3".format(
-                identity_service.service_protocol(),
-                identity_service.service_host(),
-                identity_service.service_port(),
-            ),
-            '--os-domain-id', identity_service.admin_domain_id(),
-            '--os-tenant-id', identity_service.admin_project_id(),
-            '--os-region-name', hookenv.config('region'),
-            'trust-create',
-            '--is_cloud_trust', 'True',
-            'Admin'],
+        subprocess.check_call(
+            [
+                "workloadmgr",
+                "--os-username",
+                "admin",
+                "--os-password",
+                cloud_admin_password,
+                "--os-auth-url",
+                "{}://{}:{}/v3".format(
+                    identity_service.service_protocol(),
+                    identity_service.service_host(),
+                    identity_service.service_port(),
+                ),
+                "--os-domain-id",
+                identity_service.admin_domain_id(),
+                "--os-tenant-id",
+                identity_service.admin_project_id(),
+                "--os-region-name",
+                hookenv.config("region"),
+                "trust-create",
+                "--is_cloud_trust",
+                "True",
+                "Admin",
+            ]
         )

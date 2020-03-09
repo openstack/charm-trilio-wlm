@@ -37,9 +37,9 @@ import charm.openstack.trilio_wlm  # noqa
 def create_cloud_admin_trust(*args):
     """Create trust relation between Trilio WLM and Cloud Admin
     """
-    cloud_admin_password = hookenv.function_get('password')
+    cloud_admin_password = hookenv.function_get("password")
     identity_service = reactive.RelationBase.from_state(
-        'identity-service.available'
+        "identity-service.available"
     )
     with charms_openstack.charm.provide_charm_instance() as trilio_wlm_charm:
         trilio_wlm_charm.create_trust(identity_service, cloud_admin_password)

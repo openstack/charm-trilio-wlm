@@ -73,7 +73,7 @@ class TestTrilioWLMCharmAdapterProperties(Helper):
         self.config.return_value = "TestRegionA"
         trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
         trilio_wlm_charm.create_trust(identity_service, "test-ca-password")
-        self.config.assert_called_with('region')
+        self.config.assert_called_with("region")
         self.check_call.assert_called_with(
             [
                 "workloadmgr",
@@ -95,3 +95,10 @@ class TestTrilioWLMCharmAdapterProperties(Helper):
                 "Admin",
             ]
         )
+
+    def test_create_trust_not_ready(self):
+        identity_service = mock.MagicMock()
+        identity_service.base_data_complete.return_value = False
+        trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
+        with self.assertRaises(trilio_wlm.IdentityServiceIncompleteException):
+            trilio_wlm_charm.create_trust(identity_service, "test-ca-password")
