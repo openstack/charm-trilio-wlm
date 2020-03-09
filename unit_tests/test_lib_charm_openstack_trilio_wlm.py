@@ -16,7 +16,7 @@
 import mock
 import unittest
 
-import charm.openstack.sdn_charm as sdn_charm
+import charm.openstack.trilio_wlm as trilio_wlm
 
 
 class Helper(unittest.TestCase):
@@ -42,3 +42,4 @@ class Helper(unittest.TestCase):
 
 
 class TestSDNCharm(Helper):
+    pass
