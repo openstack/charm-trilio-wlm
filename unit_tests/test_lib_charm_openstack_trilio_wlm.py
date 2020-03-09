@@ -57,6 +57,9 @@ class TestTrilioWLMCharmAdapterProperties(Helper):
             trilio_wlm._get_internal_url(identity_service, "barbican"), None
         )
 
+
+class TestTrilioWLMCharmTrustActions(Helper):
+
     def test_create_trust(self):
         identity_service = mock.MagicMock()
         identity_service.admin_domain_id.return_value = (
