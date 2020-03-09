@@ -16,6 +16,12 @@ the Cloud Admin account using the Admin role.  This is completed using the
     juju run-action --wait trilio-wlm/leader create-cloud-admin-trust \
         password=<cloud admin password>
 
+This allows the Trilio WLM service account to impersonate the Cloud Admin
+account in order to access full details of services being protected.
+
+Trusts can be listed and managed using the 'openstack trust ...' set of
+OSC commands.
+
 # Configuration Options
 
 TODO
