@@ -104,3 +104,65 @@ class TestTrilioWLMCharmTrustActions(Helper):
         trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
         with self.assertRaises(trilio_wlm.IdentityServiceIncompleteException):
             trilio_wlm_charm.create_trust(identity_service, "test-ca-password")
+
+
+class TestTrilioWLMCharmLicenseActions(Helper):
+    def test_create_license(self):
+        identity_service = mock.MagicMock()
+        identity_service.service_domain_id.return_value = (
+            "8e7b72adde7f4a15a4f23620a1d0cfd1"
+        )
+        identity_service.service_tenant_id.return_value = (
+            "56446f91358b40d3858276fe9680f5d8"
+        )
+        identity_service.service_protocol.return_value = "http"
+        identity_service.service_host.return_value = "localhost"
+        identity_service.service_port.return_value = "5000"
+        identity_service.service_username.return_value = "triliowlm"
+        identity_service.service_password.return_value = "testingpassword"
+        self.patch_object(trilio_wlm.subprocess, "check_call")
+        self.patch_object(trilio_wlm.hookenv, "config")
+        self.patch_object(trilio_wlm.hookenv, "resource_get")
+        self.config.return_value = "TestRegionA"
+        self.resource_get.return_value = "/var/lib/charm/license.lic"
+        trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
+        trilio_wlm_charm.create_license(identity_service)
+        self.config.assert_called_with("region")
+        self.resource_get.assert_called_with("license")
+        self.check_call.assert_called_with(
+            [
+                "workloadmgr",
+                "--os-username",
+                "triliowlm",
+                "--os-password",
+                "testingpassword",
+                "--os-auth-url",
+                "http://localhost:5000/v3",
+                "--os-domain-id",
+                "8e7b72adde7f4a15a4f23620a1d0cfd1",
+                "--os-tenant-id",
+                "56446f91358b40d3858276fe9680f5d8",
+                "--os-region-name",
+                "TestRegionA",
+                "license-create",
+                "/var/lib/charm/license.lic",
+            ]
+        )
+
+    def test_create_license_missing(self):
+        identity_service = mock.MagicMock()
+        identity_service.base_data_complete.return_value = False
+        self.patch_object(trilio_wlm.hookenv, "resource_get")
+        self.resource_get.return_value = False
+        trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
+        with self.assertRaises(trilio_wlm.LicenseFileMissingException):
+            trilio_wlm_charm.create_license(identity_service)
+
+    def test_create_license_not_ready(self):
+        identity_service = mock.MagicMock()
+        identity_service.base_data_complete.return_value = False
+        self.patch_object(trilio_wlm.hookenv, "resource_get")
+        self.resource_get.return_value = "/var/lib/charm/license.lic"
+        trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
+        with self.assertRaises(trilio_wlm.IdentityServiceIncompleteException):
+            trilio_wlm_charm.create_license(identity_service)
