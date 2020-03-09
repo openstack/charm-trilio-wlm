@@ -6,3 +6,5 @@ create-cloud-admin-trust:
       description: Password for the cloud admin account
   required:
     - password
+create-license:
+  description: Create license for operation of TrilioVault. License file is provided as the 'license' resource.

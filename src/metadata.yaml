@@ -14,3 +14,8 @@ tags:
   - storage
 series:
   - bionic
+resources:
+  license:
+    type: file
+    filename: license.lic
+    description: "TrilioVault License file"

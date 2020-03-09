@@ -45,9 +45,22 @@ def create_cloud_admin_trust(*args):
         trilio_wlm_charm.create_trust(identity_service, cloud_admin_password)
 
 
+def create_license(*args):
+    """Create license for operation of TrilioVault
+    """
+    identity_service = reactive.RelationBase.from_state(
+        "identity-service.available"
+    )
+    with charms_openstack.charm.provide_charm_instance() as trilio_wlm_charm:
+        trilio_wlm_charm.create_license(identity_service)
+
+
 # Actions to function mapping, to allow for illegal python action names that
 # can map to a python function.
-ACTIONS = {"create-cloud-admin-trust": create_cloud_admin_trust}
+ACTIONS = {
+    "create-cloud-admin-trust": create_cloud_admin_trust,
+    "create-license": create_license,
+}
 
 
 def main(args):

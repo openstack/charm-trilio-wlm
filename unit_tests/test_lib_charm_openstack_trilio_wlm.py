@@ -59,7 +59,6 @@ class TestTrilioWLMCharmAdapterProperties(Helper):
 
 
 class TestTrilioWLMCharmTrustActions(Helper):
-
     def test_create_trust(self):
         identity_service = mock.MagicMock()
         identity_service.admin_domain_id.return_value = (

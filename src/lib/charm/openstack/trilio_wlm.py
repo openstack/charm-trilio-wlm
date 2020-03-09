@@ -54,6 +54,12 @@ class IdentityServiceIncompleteException(Exception):
     pass
 
 
+class LicenseFileMissingException(Exception):
+    """Signal that the license file has not been provided as a resource"""
+
+    pass
+
+
 class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     # Internal name of charm
@@ -191,5 +197,39 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
                 "--is_cloud_trust",
                 "True",
                 "Admin",
+            ]
+        )
+
+    def create_license(self, identity_service):
+        license = hookenv.resource_get("license")
+        if not license:
+            raise LicenseFileMissingException(
+                "License file not provided as a resource"
+            )
+        if not identity_service.base_data_complete():
+            raise IdentityServiceIncompleteException(
+                "identity-service relation incomplete"
+            )
+        subprocess.check_call(
+            [
+                "workloadmgr",
+                "--os-username",
+                identity_service.service_username(),
+                "--os-password",
+                identity_service.service_password(),
+                "--os-auth-url",
+                "{}://{}:{}/v3".format(
+                    identity_service.service_protocol(),
+                    identity_service.service_host(),
+                    identity_service.service_port(),
+                ),
+                "--os-domain-id",
+                identity_service.service_domain_id(),
+                "--os-tenant-id",
+                identity_service.service_tenant_id(),
+                "--os-region-name",
+                hookenv.config("region"),
+                "license-create",
+                license,
             ]
         )
