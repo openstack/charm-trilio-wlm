@@ -201,8 +201,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         )
 
     def create_license(self, identity_service):
-        license = hookenv.resource_get("license")
-        if not license:
+        license_file = hookenv.resource_get("license")
+        if not license_file:
             raise LicenseFileMissingException(
                 "License file not provided as a resource"
             )
@@ -230,6 +230,6 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
                 "--os-region-name",
                 hookenv.config("region"),
                 "license-create",
-                license,
+                license_file,
             ]
         )
