@@ -148,9 +148,9 @@ class TestDmapiHandlers(test_utils.PatchHelper):
         )
         self.provide_charm_instance().__enter__.return_value = wlm_charm
         self.provide_charm_instance().__exit__.return_value = None
-        wlm_charm.required_services = ['foo', 'bar']
+        wlm_charm.required_services = ["foo", "bar"]
         identity_service = mock.MagicMock()
         handlers.request_endpoint_notification(identity_service)
         identity_service.request_notification.assert_called_once_with(
-            ['foo', 'bar']
+            ["foo", "bar"]
         )

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import collections
+import subprocess
 
 import charmhelpers.core.hookenv as hookenv
 import charms_openstack.charm
@@ -116,7 +117,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     workloadmgr_install_dir = "/usr/lib/python3/dist-packages/workloadmgr"
 
-    endpoint_template = "{}:{}/v1/$(tenant_id)s"
+    endpoint_template = "{}/v1/$(tenant_id)s"
 
     def __init__(self, release=None, **kwargs):
         super().__init__(release="stein", **kwargs)
@@ -143,8 +144,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         in the self.default_service attribute
         """
         return self.endpoint_template.format(
-            os_ip.canonical_url(os_ip.PUBLIC),
-            self.api_port(self.default_service, os_ip.PUBLIC),
+            super().public_url
         )
 
     @property
@@ -153,8 +153,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         in the self.default_service attribute
         """
         return self.endpoint_template.format(
-            os_ip.canonical_url(os_ip.ADMIN),
-            self.api_port(self.default_service, os_ip.ADMIN),
+            super().admin_url
         )
 
     @property
@@ -163,6 +162,26 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         specificated in the self.default_service attribtue
         """
         return self.endpoint_template.format(
-            os_ip.canonical_url(os_ip.INTERNAL),
-            self.api_port(self.default_service, os_ip.INTERNAL),
+            super().internal_url
+        )
+
+    def create_trust(self, identity_service, cloud_admin_password):
+        """Create trust between Trilio WLM service user and Cloud Admin
+        """
+        # NOTE(jamespage): hardcode of admin username here may be brittle
+        subprocess.check_call([
+            'workloadmgr',
+            '--os-username', 'admin',
+            '--os-password', cloud_admin_password,
+            '--os-auth-url', "{}://{}:{}/v3".format(
+                identity_service.service_protocol(),
+                identity_service.service_host(),
+                identity_service.service_port(),
+            ),
+            '--os-domain-id', identity_service.admin_domain_id(),
+            '--os-tenant-id', identity_service.admin_project_id(),
+            '--os-region-name', hookenv.config('region'),
+            'trust-create',
+            '--is_cloud_trust', 'True',
+            'Admin'],
         )

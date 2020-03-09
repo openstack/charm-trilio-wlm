@@ -1,0 +1,8 @@
+create-cloud-admin-trust:
+  description: Create trust between Trilio WLM user and Cloud Admin
+  properties:
+    password:
+      type: string
+      description: Password for the cloud admin account
+  required:
+    - password

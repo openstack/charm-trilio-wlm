@@ -56,3 +56,42 @@ class TestTrilioWLMCharmAdapterProperties(Helper):
         self.assertEqual(
             trilio_wlm._get_internal_url(identity_service, "barbican"), None
         )
+
+    def test_create_trust(self):
+        identity_service = mock.MagicMock()
+        identity_service.admin_domain_id.return_value = (
+            "8e7b72adde7f4a15a4f23620a1d0cfd1"
+        )
+        identity_service.admin_project_id.return_value = (
+            "56446f91358b40d3858276fe9680f5d8"
+        )
+        identity_service.service_protocol.return_value = "http"
+        identity_service.service_host.return_value = "localhost"
+        identity_service.service_port.return_value = "5000"
+        self.patch_object(trilio_wlm.subprocess, "check_call")
+        self.patch_object(trilio_wlm.hookenv, "config")
+        self.config.return_value = "TestRegionA"
+        trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
+        trilio_wlm_charm.create_trust(identity_service, "test-ca-password")
+        self.config.assert_called_with('region')
+        self.check_call.assert_called_with(
+            [
+                "workloadmgr",
+                "--os-username",
+                "admin",
+                "--os-password",
+                "test-ca-password",
+                "--os-auth-url",
+                "http://localhost:5000/v3",
+                "--os-domain-id",
+                "8e7b72adde7f4a15a4f23620a1d0cfd1",
+                "--os-tenant-id",
+                "56446f91358b40d3858276fe9680f5d8",
+                "--os-region-name",
+                "TestRegionA",
+                "trust-create",
+                "--is_cloud_trust",
+                "True",
+                "Admin",
+            ]
+        )
