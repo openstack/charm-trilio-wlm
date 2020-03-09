@@ -23,7 +23,7 @@ import charms_openstack.ip as os_ip
 def _get_internal_url(identity_service, service):
     ep_catalog = identity_service.relation.endpoint_checksums()
     if service in ep_catalog:
-        return ep_catalog[service]["internal"]
+        return ep_catalog.get(service)["internal"]
     return None
 
 
@@ -129,7 +129,6 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
             {
                 "database": self.service_type,
                 "username": self.service_type,
-                "hostname": hookenv.network_get_primary_address("shared-db"),
             }
         ]
 

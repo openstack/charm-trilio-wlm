@@ -106,8 +106,7 @@ class TestDmapiHandlers(test_utils.PatchHelper):
             ),
             "init_db": ("config.rendered",),
             "cluster_connected": ("ha.connected",),
-            "request_endpoint_notification":
-                ("identity-service.connected",)
+            "request_endpoint_notification": ("identity-service.connected",),
         }
         when_not_patterns = {}
         # check the when hooks are attached to the expected functions

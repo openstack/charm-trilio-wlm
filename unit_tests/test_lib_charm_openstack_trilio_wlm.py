@@ -14,32 +14,45 @@
 
 
 import mock
-import unittest
 
 import charm.openstack.trilio_wlm as trilio_wlm
+import charms_openstack.test_utils as test_utils
 
 
-class Helper(unittest.TestCase):
-
+class Helper(test_utils.PatchHelper):
     def setUp(self):
-        self._patches = {}
-        self._patches_start = {}
-
-    def tearDown(self):
-        for k, v in self._patches.items():
-            v.stop()
-            setattr(self, k, None)
-        self._patches = None
-        self._patches_start = None
-
-    def patch(self, obj, attr, return_value=None, **kwargs):
-        mocked = mock.patch.object(obj, attr, **kwargs)
-        self._patches[attr] = mocked
-        started = mocked.start()
-        started.return_value = return_value
-        self._patches_start[attr] = started
-        setattr(self, attr, started)
+        super().setUp()
+        self.patch_release(trilio_wlm.TrilioWLMCharm.release)
 
 
-class TestSDNCharm(Helper):
-    pass
+class TestTrilioWLMCharmAdapterProperties(Helper):
+
+    _endpoints = {
+        "neutron": {"internal": "http://neutron-controller"},
+        "cinderv2": {"internal": "http://cinder-controller"},
+        "glance": {"internal": "http://glance-controller"},
+        "nova": {"internal": "http://nova-controller"},
+    }
+
+    def test_url_handlers(self):
+        identity_service = mock.MagicMock()
+        identity_service.relation.endpoint_checksums.return_value = (
+            self._endpoints
+        )
+        self.assertEqual(
+            trilio_wlm.nova_url(identity_service), "http://nova-controller"
+        )
+        self.assertEqual(
+            trilio_wlm.cinder_url(identity_service), "http://cinder-controller"
+        )
+        self.assertEqual(
+            trilio_wlm.glance_url(identity_service), "http://glance-controller"
+        )
+        self.assertEqual(
+            trilio_wlm.neutron_url(identity_service),
+            "http://neutron-controller",
+        )
+
+        self.assertEqual(
+            trilio_wlm._get_internal_url(identity_service, "barbican"), None
+        )
