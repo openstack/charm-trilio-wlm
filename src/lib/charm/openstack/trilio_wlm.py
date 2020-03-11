@@ -110,7 +110,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     sync_cmd = [
         "alembic",
-        "--config={}".format(workloadmgr_conf),
+        "--config={}".format(alembic_ini),
         "upgrade",
         "head",
     ]

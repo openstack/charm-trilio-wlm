@@ -1,0 +1,7 @@
+config:
+  linux.kernel_modules: kvm
+  raw.apparmor: mount fstype=nfs
+devices:
+  kvm:
+    path: /dev/kvm
+    type: unix-char
