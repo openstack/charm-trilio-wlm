@@ -1,6 +1,7 @@
 # Overview
 
-TODO
+This charm provides the TrilioVault Workload Manager Service which forms
+part of the [TrilioVault Cloud Backup solution][trilio.io].
 
 # Usage
 
@@ -44,5 +45,9 @@ TrilioVault in the OpenStack Dashboard.
 
 TODO
 
-# Restrictions
+# Bugs
 
+Please report bugs on [Launchpad][lp-bugs-charm-trilio-wlm].
+
+[lp-bugs-charm-trilio-wlm]: https://bugs.launchpad.net/charm-trilio-wlm/+filebug
+[trilio.io]: https://www.trilio.io/triliovault/openstack
