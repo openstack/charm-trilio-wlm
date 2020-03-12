@@ -1,6 +1,7 @@
 config:
   linux.kernel_modules: kvm
-  raw.apparmor: mount fstype=nfs
+  raw.apparmor: mount fstype=nfs,
+  security.privileged: "true"
 devices:
   kvm:
     path: /dev/kvm
