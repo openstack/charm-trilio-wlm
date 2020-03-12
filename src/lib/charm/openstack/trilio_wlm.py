@@ -75,7 +75,12 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     # List of packages to install for this charm
     # NOTE(jamespage): nova-common ensures a consistent UID is use
     # for the nova user.
-    packages = ["nova-common", "workloadmgr", "python-apt"]
+    packages = [
+        "linux-image-virtual",  # Used for libguestfs supermin appliance
+        "nova-common",
+        "workloadmgr",
+        "python-apt"
+    ]
 
     # Ensure we use the right package for versioning
     version_package = "workloadmgr"
