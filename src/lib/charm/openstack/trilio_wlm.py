@@ -95,7 +95,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     service_type = "workloadmgr"
     default_service = "workloadmgr-api"
-    services = ["wlm-api", "wlm-scheduler", "wlm-workloads"]
+    services = ["wlm-api", "wlm-scheduler", "wlm-workloads", "wlm-cron"]
 
     required_relations = ["shared-db", "amqp", "identity-service"]
 
@@ -110,7 +110,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     release_pkg = "workloadmgr"
 
     package_codenames = {
-        "workloadmgr": collections.OrderedDict([("3", "stein")])
+        "workloadmgr": collections.OrderedDict([("3", "stein")]),
+        "workloadmgr": collections.OrderedDict([("4", "train")])
     }
 
     sync_cmd = [
@@ -194,8 +195,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
                 ),
                 "--os-domain-id",
                 identity_service.admin_domain_id(),
-                "--os-tenant-id",
-                identity_service.admin_project_id(),
+                "--os-tenant-name",
+                "admin",
                 "--os-region-name",
                 hookenv.config("region"),
                 "trust-create",
@@ -231,7 +232,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
                 "--os-domain-id",
                 identity_service.service_domain_id(),
                 "--os-tenant-id",
-                identity_service.service_tenant_id(),
+                identity_service.service_tenant(),
                 "--os-region-name",
                 hookenv.config("region"),
                 "license-create",
