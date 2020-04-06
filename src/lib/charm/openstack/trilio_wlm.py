@@ -198,7 +198,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
         @param hacluster instance of interface class HAClusterRequires
         """
-        super().configure_ha_resources()
+        super().configure_ha_resources(hacluster)
         hacluster.add_init_service(self.name, 'wlm-cron',
                                    clone=False)
 
