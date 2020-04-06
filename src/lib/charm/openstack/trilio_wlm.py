@@ -20,6 +20,8 @@ import charms_openstack.charm
 import charms_openstack.adapters
 import charms_openstack.ip as os_ip
 
+import charms.reactive as reactive
+
 
 def _get_internal_url(identity_service, service):
     ep_catalog = identity_service.relation.endpoint_checksums()
@@ -95,23 +97,18 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     service_type = "workloadmgr"
     default_service = "workloadmgr-api"
-    services = ["wlm-api", "wlm-scheduler", "wlm-workloads", "wlm-cron"]
 
     required_relations = ["shared-db", "amqp", "identity-service"]
-
-    restart_map = {
-        workloadmgr_conf: services,
-        api_paste_ini: ["wlm-api"],
-        alembic_ini: [],
-    }
 
     ha_resources = ["vips", "haproxy"]
 
     release_pkg = "workloadmgr"
 
     package_codenames = {
-        "workloadmgr": collections.OrderedDict([("3", "stein")]),
-        "workloadmgr": collections.OrderedDict([("4", "train")])
+        "workloadmgr": collections.OrderedDict([
+            ("3", "stein"),
+            ("4", "train"),
+        ]),
     }
 
     sync_cmd = [
@@ -172,6 +169,39 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         """
         return self.endpoint_template.format(super().internal_url)
 
+    @property
+    def services(self):
+        """Determine the services associated with this class
+        """
+        if reactive.flags.is_flag_set('hacluster.available'):
+            # Stop managing wlm-cron service as it needs to be single
+            # instance across the cluster which will be managed by
+            # corosync and pacemaker
+            return ["wlm-api", "wlm-scheduler", "wlm-workloads"]
+        return ["wlm-api", "wlm-scheduler", "wlm-workloads", "wlm-cron"]
+
+    @property
+    def restart_map(self):
+        """Generate the restart map for this service
+        """
+        return {
+            self.workloadmgr_conf: self.services,
+            self.api_paste_ini: ["wlm-api"],
+            self.alembic_ini: [],
+        }
+
+    def configure_ha_resources(self, hacluster):
+        """Inform the ha subordinate about each service it should manage.
+
+        Delegate core resources to the parent class and add wlm-cron as
+        and additional init service to manage
+
+        @param hacluster instance of interface class HAClusterRequires
+        """
+        super().configure_ha_resources()
+        hacluster.add_init_service(self.name, 'wlm-cron',
+                                   clone=False)
+
     def create_trust(self, identity_service, cloud_admin_password):
         """Create trust between Trilio WLM service user and Cloud Admin
         """
@@ -195,6 +225,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
                 ),
                 "--os-domain-id",
                 identity_service.admin_domain_id(),
+                "--os-tenant-id",
+                identity_service.admin_project_id(),
                 "--os-tenant-name",
                 "admin",
                 "--os-region-name",
@@ -232,6 +264,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
                 "--os-domain-id",
                 identity_service.service_domain_id(),
                 "--os-tenant-id",
+                identity_service.service_tenant_id(),
+                "--os-tenant-name",
                 identity_service.service_tenant(),
                 "--os-region-name",
                 hookenv.config("region"),
