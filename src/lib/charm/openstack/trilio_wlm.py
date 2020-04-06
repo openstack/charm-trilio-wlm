@@ -173,7 +173,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     def services(self):
         """Determine the services associated with this class
         """
-        if reactive.flags.is_flag_set('hacluster.available'):
+        if reactive.flags.is_flag_set('ha.available'):
             # Stop managing wlm-cron service as it needs to be single
             # instance across the cluster which will be managed by
             # corosync and pacemaker
@@ -199,8 +199,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         @param hacluster instance of interface class HAClusterRequires
         """
         super().configure_ha_resources(hacluster)
-        hacluster.add_init_service(self.name, 'wlm-cron',
-                                   clone=False)
+        hacluster.add_systemd_service(self.name, 'wlm-cron',
+                                      clone=False)
 
     def create_trust(self, identity_service, cloud_admin_password):
         """Create trust between Trilio WLM service user and Cloud Admin
