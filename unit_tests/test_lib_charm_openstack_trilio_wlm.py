@@ -175,6 +175,7 @@ class TestTrilioWLMCharmLicenseActions(Helper):
             trilio_wlm_charm.create_license(identity_service)
 
 
+# TODO: refactor into a layer/module
 class TestTrilioWLMCharmGhostShareAction(Helper):
 
     _nfs_shares = "10.20.30.40:/srv/trilioshare"

@@ -294,6 +294,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         """base64 encode an backup endpoint for cross mounting support"""
         return base64.b64encode(backup_endpoint.encode()).decode()
 
+    # TODO: refactor into a layer/module
     def ghost_nfs_share(self, ghost_share):
         """Bind mount the local units nfs share to another sites location
 
