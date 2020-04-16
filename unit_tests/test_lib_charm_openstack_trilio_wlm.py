@@ -221,6 +221,7 @@ class TestTrilioWLMCharmGhostShareAction(Helper):
         ]
         with self.assertRaises(trilio_wlm.GhostShareAlreadyMountedException):
             self.trilio_wlm_charm.ghost_nfs_share(self._ghost_shares)
+        self.mount.assert_not_called()
 
     def test_ghost_share_nfs_unmounted(self):
         self.config.return_value = self._nfs_shares
@@ -228,3 +229,4 @@ class TestTrilioWLMCharmGhostShareAction(Helper):
         self.exists.return_value = False
         with self.assertRaises(trilio_wlm.NFSShareNotMountedException):
             self.trilio_wlm_charm.ghost_nfs_share(self._ghost_shares)
+        self.mount.assert_not_called()
