@@ -55,11 +55,20 @@ def create_license(*args):
         trilio_wlm_charm.create_license(identity_service)
 
 
+def ghost_share(*args):
+    """Ghost mount secondard TV deployment nfs-share
+    """
+    secondary_nfs_share = hookenv.function_get("nfs-shares")
+    with charms_openstack.charm.provide_charm_instance() as trilio_wlm_charm:
+        trilio_wlm_charm.ghost_nfs_share(secondary_nfs_share)
+
+
 # Actions to function mapping, to allow for illegal python action names that
 # can map to a python function.
 ACTIONS = {
     "create-cloud-admin-trust": create_cloud_admin_trust,
     "create-license": create_license,
+    "ghost-share": ghost_share,
 }
 
 

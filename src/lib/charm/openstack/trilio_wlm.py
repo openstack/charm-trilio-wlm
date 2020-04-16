@@ -12,15 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
 import collections
 import subprocess
+import os
 
 import charmhelpers.core.hookenv as hookenv
+import charmhelpers.core.host as host
+
 import charms_openstack.charm
 import charms_openstack.adapters
 import charms_openstack.ip as os_ip
 
 import charms.reactive as reactive
+
+TV_MOUNTS = "/var/triliovault-mounts"
 
 
 def _get_internal_url(identity_service, service):
@@ -62,6 +68,18 @@ class LicenseFileMissingException(Exception):
     pass
 
 
+class NFSShareNotMountedException(Exception):
+    """Signal that the trilio nfs share is not mount"""
+
+    pass
+
+
+class GhostShareAlreadyMountedException(Exception):
+    """Signal that a ghost share is already mounted"""
+
+    pass
+
+
 class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     # Internal name of charm
@@ -81,7 +99,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         "linux-image-virtual",  # Used for libguestfs supermin appliance
         "nova-common",
         "workloadmgr",
-        "python-apt"
+        "python-apt",
     ]
 
     # Ensure we use the right package for versioning
@@ -105,10 +123,9 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     release_pkg = "workloadmgr"
 
     package_codenames = {
-        "workloadmgr": collections.OrderedDict([
-            ("3", "stein"),
-            ("4", "train"),
-        ]),
+        "workloadmgr": collections.OrderedDict(
+            [("3", "stein"), ("4", "train")]
+        )
     }
 
     sync_cmd = [
@@ -173,7 +190,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     def services(self):
         """Determine the services associated with this class
         """
-        if reactive.flags.is_flag_set('ha.available'):
+        if reactive.flags.is_flag_set("ha.available"):
             # Stop managing wlm-cron service as it needs to be single
             # instance across the cluster which will be managed by
             # corosync and pacemaker
@@ -199,8 +216,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         @param hacluster instance of interface class HAClusterRequires
         """
         super().configure_ha_resources(hacluster)
-        hacluster.add_systemd_service(self.name, 'wlm-cron',
-                                      clone=False)
+        hacluster.add_systemd_service(self.name, "wlm-cron", clone=False)
 
     def create_trust(self, identity_service, cloud_admin_password):
         """Create trust between Trilio WLM service user and Cloud Admin
@@ -273,3 +289,41 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
                 license_file,
             ]
         )
+
+    def _encode_endpoint(self, backup_endpoint):
+        """base64 encode an backup endpoint for cross mounting support"""
+        return base64.b64encode(backup_endpoint.encode()).decode()
+
+    def ghost_nfs_share(self, ghost_share):
+        """Bind mount the local units nfs share to another sites location
+
+        :param ghost_share: NFS share URL to ghost
+        :type ghost_share: str
+        """
+        nfs_share_path = os.path.join(
+            TV_MOUNTS, self._encode_endpoint(hookenv.config("nfs-shares"))
+        )
+        ghost_share_path = os.path.join(
+            TV_MOUNTS, self._encode_endpoint(ghost_share)
+        )
+
+        if not os.path.exists(ghost_share_path):
+            os.mkdir(ghost_share_path)
+
+        current_mounts = [mount[0] for mount in host.mounts()]
+
+        if nfs_share_path not in current_mounts:
+            # Trilio has not mounted the NFS share so return
+            raise NFSShareNotMountedException(
+                "nfs-shares ({}) not mounted".format(
+                    hookenv.config("nfs-shares")
+                )
+            )
+
+        if ghost_share_path in current_mounts:
+            # bind mount already setup so return
+            raise GhostShareAlreadyMountedException(
+                "ghost mountpoint ({}) already bound".format(ghost_share_path)
+            )
+
+        host.mount(nfs_share_path, ghost_share_path, options="bind")

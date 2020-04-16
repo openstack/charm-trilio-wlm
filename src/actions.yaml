@@ -8,3 +8,11 @@ create-cloud-admin-trust:
     - password
 create-license:
   description: Create license for operation of TrilioVault. License file is provided as the 'license' resource.
+ghost-share:
+  description: "Bind mount NFS share 'host' for secondary Trilio Vault deployment"
+  properties:
+    nfs-shares:
+      type: string
+      description: Exact nfs-shares configuration option from secondary deployment
+  required:
+    - nfs-shares
