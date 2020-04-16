@@ -138,7 +138,6 @@ class TestDmapiHandlers(test_utils.PatchHelper):
         handlers.render_config(args)
         wlm_charm.upgrade_if_available.assert_called_once_with((args,))
         wlm_charm.render_with_interfaces.assert_called_once_with((args,))
-        wlm_charm.configure_tls.assert_called_once_with()
         wlm_charm.assess_status.assert_called_once_with()
 
     def test_register_endpoint_notification(self):

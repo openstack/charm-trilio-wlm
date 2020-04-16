@@ -307,9 +307,6 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
             TV_MOUNTS, self._encode_endpoint(ghost_share)
         )
 
-        if not os.path.exists(ghost_share_path):
-            os.mkdir(ghost_share_path)
-
         current_mounts = [mount[0] for mount in host.mounts()]
 
         if nfs_share_path not in current_mounts:
@@ -325,5 +322,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
             raise GhostShareAlreadyMountedException(
                 "ghost mountpoint ({}) already bound".format(ghost_share_path)
             )
+
+        if not os.path.exists(ghost_share_path):
+            os.mkdir(ghost_share_path)
 
         host.mount(nfs_share_path, ghost_share_path, options="bind")

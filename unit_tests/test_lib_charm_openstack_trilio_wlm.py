@@ -14,6 +14,7 @@
 
 
 import mock
+import os
 
 import charm.openstack.trilio_wlm as trilio_wlm
 import charms_openstack.test_utils as test_utils
@@ -70,6 +71,7 @@ class TestTrilioWLMCharmTrustActions(Helper):
         identity_service.service_protocol.return_value = "http"
         identity_service.service_host.return_value = "localhost"
         identity_service.service_port.return_value = "5000"
+        identity_service.service_tenant.return_value = "admin"
         self.patch_object(trilio_wlm.subprocess, "check_call")
         self.patch_object(trilio_wlm.hookenv, "config")
         self.config.return_value = "TestRegionA"
@@ -89,6 +91,8 @@ class TestTrilioWLMCharmTrustActions(Helper):
                 "8e7b72adde7f4a15a4f23620a1d0cfd1",
                 "--os-tenant-id",
                 "56446f91358b40d3858276fe9680f5d8",
+                "--os-tenant-name",
+                "admin",
                 "--os-region-name",
                 "TestRegionA",
                 "trust-create",
@@ -120,6 +124,7 @@ class TestTrilioWLMCharmLicenseActions(Helper):
         identity_service.service_port.return_value = "5000"
         identity_service.service_username.return_value = "triliowlm"
         identity_service.service_password.return_value = "testingpassword"
+        identity_service.service_tenant.return_value = "admin"
         self.patch_object(trilio_wlm.subprocess, "check_call")
         self.patch_object(trilio_wlm.hookenv, "config")
         self.patch_object(trilio_wlm.hookenv, "resource_get")
@@ -142,6 +147,8 @@ class TestTrilioWLMCharmLicenseActions(Helper):
                 "8e7b72adde7f4a15a4f23620a1d0cfd1",
                 "--os-tenant-id",
                 "56446f91358b40d3858276fe9680f5d8",
+                "--os-tenant-name",
+                "admin",
                 "--os-region-name",
                 "TestRegionA",
                 "license-create",
@@ -166,3 +173,58 @@ class TestTrilioWLMCharmLicenseActions(Helper):
         trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
         with self.assertRaises(trilio_wlm.IdentityServiceIncompleteException):
             trilio_wlm_charm.create_license(identity_service)
+
+
+class TestTrilioWLMCharmGhostShareAction(Helper):
+
+    _nfs_shares = "10.20.30.40:/srv/trilioshare"
+    _ghost_shares = "50.20.30.40:/srv/trilioshare"
+
+    def setUp(self):
+        super().setUp()
+        self.patch_object(trilio_wlm.hookenv, "config")
+        self.patch_object(trilio_wlm.host, "mounts")
+        self.patch_object(trilio_wlm.host, "mount")
+        self.patch_object(trilio_wlm.os.path, "exists")
+        self.patch_object(trilio_wlm.os, "mkdir")
+
+        self.trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
+        self._nfs_path = os.path.join(
+            trilio_wlm.TV_MOUNTS,
+            self.trilio_wlm_charm._encode_endpoint(self._nfs_shares),
+        )
+        self._ghost_path = os.path.join(
+            trilio_wlm.TV_MOUNTS,
+            self.trilio_wlm_charm._encode_endpoint(self._ghost_shares),
+        )
+
+    def test_ghost_share(self):
+        self.config.return_value = self._nfs_shares
+        self.mounts.return_value = [
+            ["/srv/nova", "/dev/sda"],
+            [self._nfs_path, self._nfs_shares],
+        ]
+        self.exists.return_value = False
+        self.trilio_wlm_charm.ghost_nfs_share(self._ghost_shares)
+        self.exists.assert_called_once_with(self._ghost_path)
+        self.mkdir.assert_called_once_with(self._ghost_path)
+        self.mount.assert_called_once_with(
+            self._nfs_path, self._ghost_path, options="bind"
+        )
+
+    def test_ghost_share_already_bound(self):
+        self.config.return_value = self._nfs_shares
+        self.mounts.return_value = [
+            ["/srv/nova", "/dev/sda"],
+            [self._nfs_path, self._nfs_shares],
+            [self._ghost_path, self._nfs_shares],
+        ]
+        with self.assertRaises(trilio_wlm.GhostShareAlreadyMountedException):
+            self.trilio_wlm_charm.ghost_nfs_share(self._ghost_shares)
+
+    def test_ghost_share_nfs_unmounted(self):
+        self.config.return_value = self._nfs_shares
+        self.mounts.return_value = [["/srv/nova", "/dev/sda"]]
+        self.exists.return_value = False
+        with self.assertRaises(trilio_wlm.NFSShareNotMountedException):
+            self.trilio_wlm_charm.ghost_nfs_share(self._ghost_shares)
