@@ -26,6 +26,9 @@ import charms_openstack.ip as os_ip
 
 import charms.reactive as reactive
 
+# select the default release function
+charms_openstack.charm.use_defaults('charm.default-select-release')
+
 TV_MOUNTS = "/var/triliovault-mounts"
 
 
@@ -74,6 +77,12 @@ class NFSShareNotMountedException(Exception):
     pass
 
 
+class UnitNotLeaderException(Exception):
+    """Signal that the unit is not the application leader"""
+
+    pass
+
+
 class GhostShareAlreadyMountedException(Exception):
     """Signal that a ghost share is already mounted"""
 
@@ -89,8 +98,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     api_paste_ini = "/etc/workloadmgr/api-paste.ini"
     alembic_ini = "/etc/workloadmgr/alembic.ini"
 
-    # First release supported
-    release = "stein"
+    release = "train"
 
     # List of packages to install for this charm
     # NOTE(jamespage): nova-common ensures a consistent UID is use
@@ -221,6 +229,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     def create_trust(self, identity_service, cloud_admin_password):
         """Create trust between Trilio WLM service user and Cloud Admin
         """
+        if not hookenv.is_leader():
+            raise UnitNotLeaderException("please run on leader unit")
         if not identity_service.base_data_complete():
             raise IdentityServiceIncompleteException(
                 "identity-service relation incomplete"
@@ -253,8 +263,11 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
                 "Admin",
             ]
         )
+        hookenv.leader_set({"trusted": True})
 
     def create_license(self, identity_service):
+        if not hookenv.is_leader():
+            raise UnitNotLeaderException("please run on leader unit")
         license_file = hookenv.resource_get("license")
         if not license_file:
             raise LicenseFileMissingException(
@@ -289,6 +302,7 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
                 license_file,
             ]
         )
+        hookenv.leader_set({"licensed": True})
 
     def _encode_endpoint(self, backup_endpoint):
         """base64 encode an backup endpoint for cross mounting support"""
@@ -328,3 +342,32 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
             os.mkdir(ghost_share_path)
 
         host.mount(nfs_share_path, ghost_share_path, options="bind")
+
+    @property
+    def licensed(self):
+        return hookenv.leader_get("licensed")
+
+    @property
+    def trusted(self):
+        return hookenv.leader_get("trusted")
+
+    def custom_assess_status_check(self):
+        """Check required configuration options are set"""
+        if not hookenv.config("nfs-shares"):
+            return "blocked", "nfs-shares configuration not set"
+        return None, None
+
+    def custom_assess_status_last_check(self):
+        """Check required configuration options are set"""
+        if not self.trusted:
+            return (
+                "blocked",
+                "application not trusted; please run "
+                "'create-cloud-admin-trust' action",
+            )
+        if not self.licensed:
+            return (
+                "blocked",
+                "application not licensed; please run 'create-license' action",
+            )
+        return None, None

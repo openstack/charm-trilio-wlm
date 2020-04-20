@@ -64,3 +64,10 @@ def request_endpoint_notification(identity_service):
     """Request notification about endpoint changes"""
     with charm.provide_charm_instance() as charm_class:
         identity_service.request_notification(charm_class.required_services)
+
+
+@reactive.when_any("config.changed.triliovault-pkg-source",
+                   "config.changed.openstack-origin")
+def install_source_changed():
+    """Trigger re-install of charm if source configuration options change"""
+    reactive.clear_flag("charm.installed")
