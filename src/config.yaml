@@ -1,20 +1,38 @@
 options:
+  openstack-origin:
+    type: string
+    default: cloud:bionic-train
+    description: |
+      Repository from which to install. May be one of the following:
+      distro (default), ppa:somecustom/ppa, a deb url sources entry or a
+      supported Ubuntu Cloud Archive (UCA) release pocket.
+      .
+      Supported UCA sources include:
+      .
+      cloud:<series>-<openstack-release>
+      cloud:<series>-<openstack-release>/updates
+      cloud:<series>-<openstack-release>/staging
+      cloud:<series>-<openstack-release>/proposed
+      .
+      For series=Precise we support UCA for openstack-release=
+         * icehouse
+      .
+      For series=Trusty we support UCA for openstack-release=
+         * juno
+         * kilo
+         * ...
+      .
+      NOTE: updating this setting to a source that is known to provide
+      a later version of OpenStack will trigger a software upgrade.
   triliovault-pkg-source:
     type: string
     default: "deb [trusted=yes] https://apt.fury.io/triliovault-python3/ /"
     description: Repository address of triliovault packages
-  trilio-user-id:
-    type: string
-    default:
-    description: Unique TrilioVault User ID
   backup-target-type:
     type: string
     default: nfs
     description: |
-      Type of backup target.
-      Valid types are-
-        - nfs
-        - s3
+      Type of backup target. Valid types - nfs
   nfs-options:
     type: string
     default: nolock,soft,timeo=180,intr,lookupcache=none
@@ -23,23 +41,3 @@ options:
     type: string
     default:
     description: NFS Shares mount source path
-  tv-s3-secret-key:
-    type: string
-    default:
-    description: S3 secret key
-  tv-s3-access-key:
-    type: string
-    default:
-    description: S3 access key
-  tv-s3-region-name:
-    type: string
-    default:
-    description: S3 region name
-  tv-s3-bucket:
-    type: string
-    default:
-    description: S3 bucket name
-  tv-s3-endpoint-url:
-    type: string
-    default:
-    description: S3 endpoint URL
