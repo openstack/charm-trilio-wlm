@@ -9,13 +9,14 @@ description: |
   This charm provides the TrilioVault Workload Manager Service which
   forms part of the TrilioVault solution.
 tags:
-  - openstack
-  - backup
-  - storage
+- openstack
+- backup
+- storage
 series:
-  - bionic
+- bionic
+- groovy
 resources:
   license:
     type: file
     filename: license.lic
-    description: "TrilioVault License file"
+    description: TrilioVault License file
