@@ -71,3 +71,4 @@ def request_endpoint_notification(identity_service):
 def install_source_changed():
     """Trigger re-install of charm if source configuration options change"""
     reactive.clear_flag("charm.installed")
+    reactive.set_flag("upgrade.triliovault")

@@ -12,24 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import base64
 import collections
 import subprocess
-import os
 
 import charmhelpers.core.hookenv as hookenv
-import charmhelpers.core.host as host
 
 import charms_openstack.charm
 import charms_openstack.adapters
+import charms_openstack.plugins
 import charms_openstack.ip as os_ip
 
 import charms.reactive as reactive
 
 # select the default release function
 charms_openstack.charm.use_defaults('charm.default-select-release')
-
-TV_MOUNTS = "/var/triliovault-mounts"
 
 
 def _get_internal_url(identity_service, service):
@@ -71,25 +67,8 @@ class LicenseFileMissingException(Exception):
     pass
 
 
-class NFSShareNotMountedException(Exception):
-    """Signal that the trilio nfs share is not mount"""
-
-    pass
-
-
-class UnitNotLeaderException(Exception):
-    """Signal that the unit is not the application leader"""
-
-    pass
-
-
-class GhostShareAlreadyMountedException(Exception):
-    """Signal that a ghost share is already mounted"""
-
-    pass
-
-
-class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
+class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
+                     charms_openstack.plugins.TrilioVaultCharmGhostAction):
 
     # Internal name of charm
     service_name = name = "trilio-wlm"
@@ -168,11 +147,6 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
     def get_database_setup(self):
         return [{"database": self.service_type, "username": self.service_type}]
 
-    def configure_source(self):
-        with open("/etc/apt/sources.list.d/trilio-wlm.list", "w") as tsources:
-            tsources.write(hookenv.config("triliovault-pkg-source"))
-        super().configure_source()
-
     @property
     def public_url(self):
         """Return the public endpoint URL for the default service as specified
@@ -230,7 +204,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
         """Create trust between Trilio WLM service user and Cloud Admin
         """
         if not hookenv.is_leader():
-            raise UnitNotLeaderException("please run on leader unit")
+            raise charms_openstack.plugins.classes.UnitNotLeaderException(
+                "please run on leader unit")
         if not identity_service.base_data_complete():
             raise IdentityServiceIncompleteException(
                 "identity-service relation incomplete"
@@ -269,7 +244,8 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
 
     def create_license(self, identity_service):
         if not hookenv.is_leader():
-            raise UnitNotLeaderException("please run on leader unit")
+            raise charms_openstack.plugins.classes.UnitNotLeaderException(
+                "please run on leader unit")
         license_file = hookenv.resource_get("license")
         if not license_file:
             raise LicenseFileMissingException(
@@ -307,45 +283,6 @@ class TrilioWLMCharm(charms_openstack.charm.HAOpenStackCharm):
             ]
         )
         hookenv.leader_set({"licensed": True})
-
-    def _encode_endpoint(self, backup_endpoint):
-        """base64 encode an backup endpoint for cross mounting support"""
-        return base64.b64encode(backup_endpoint.encode()).decode()
-
-    # TODO: refactor into a layer/module
-    def ghost_nfs_share(self, ghost_share):
-        """Bind mount the local units nfs share to another sites location
-
-        :param ghost_share: NFS share URL to ghost
-        :type ghost_share: str
-        """
-        nfs_share_path = os.path.join(
-            TV_MOUNTS, self._encode_endpoint(hookenv.config("nfs-shares"))
-        )
-        ghost_share_path = os.path.join(
-            TV_MOUNTS, self._encode_endpoint(ghost_share)
-        )
-
-        current_mounts = [mount[0] for mount in host.mounts()]
-
-        if nfs_share_path not in current_mounts:
-            # Trilio has not mounted the NFS share so return
-            raise NFSShareNotMountedException(
-                "nfs-shares ({}) not mounted".format(
-                    hookenv.config("nfs-shares")
-                )
-            )
-
-        if ghost_share_path in current_mounts:
-            # bind mount already setup so return
-            raise GhostShareAlreadyMountedException(
-                "ghost mountpoint ({}) already bound".format(ghost_share_path)
-            )
-
-        if not os.path.exists(ghost_share_path):
-            os.mkdir(ghost_share_path)
-
-        host.mount(nfs_share_path, ghost_share_path, options="bind")
 
     @property
     def licensed(self):
