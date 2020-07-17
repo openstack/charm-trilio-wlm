@@ -67,11 +67,39 @@ class LicenseFileMissingException(Exception):
     pass
 
 
+class TrilioWLMDatabaseAdapter(
+        charms_openstack.adapters.DatabaseRelationAdapter):
+    """
+    Overrides default class to force use of the mysqldb driver
+    """
+
+    @property
+    def driver(self):
+        return "mysql"
+
+
+class TrilioWLMCharmRelationAdapters(
+        charms_openstack.adapters.OpenStackAPIRelationAdapters):
+    """
+    Adapters collection to append specific adapters for TrilioWLM
+    """
+    relation_adapters = {
+        'amqp': charms_openstack.adapters.RabbitMQRelationAdapter,
+        'shared_db': TrilioWLMDatabaseAdapter,
+        'cluster': charms_openstack.adapters.PeerHARelationAdapter,
+        'coordinator_memcached': (
+            charms_openstack.adapters.MemcacheRelationAdapter
+        ),
+    }
+
+
 class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
                      charms_openstack.plugins.TrilioVaultCharmGhostAction):
 
     # Internal name of charm
     service_name = name = "trilio-wlm"
+
+    adapters_class = TrilioWLMCharmRelationAdapters
 
     workloadmgr_conf = "/etc/workloadmgr/workloadmgr.conf"
     api_paste_ini = "/etc/workloadmgr/api-paste.ini"
