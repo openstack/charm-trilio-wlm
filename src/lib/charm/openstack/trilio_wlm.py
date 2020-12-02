@@ -16,6 +16,7 @@ import collections
 import subprocess
 
 import charmhelpers.core.hookenv as hookenv
+import charmhelpers.contrib.openstack.utils as os_utils
 
 import charms_openstack.charm
 import charms_openstack.adapters
@@ -24,8 +25,7 @@ import charms_openstack.ip as os_ip
 
 import charms.reactive as reactive
 
-# select the default release function
-charms_openstack.charm.use_defaults('charm.default-select-release')
+charms_openstack.plugins.trilio.make_trilio_handlers()
 
 
 def _get_internal_url(identity_service, service):
@@ -106,6 +106,7 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
     alembic_ini = "/etc/workloadmgr/alembic.ini"
 
     release = "train"
+    trilio_release = "4.0"
 
     # List of packages to install for this charm
     # NOTE(jamespage): nova-common ensures a consistent UID is use
@@ -114,6 +115,8 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
         "linux-image-virtual",  # Used for libguestfs supermin appliance
         "nova-common",
         "workloadmgr",
+        "python3-workloadmgrclient",
+        "python3-contegoclient",
         "python-apt",
     ]
 
@@ -140,7 +143,8 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
     package_codenames = {
         "workloadmgr": collections.OrderedDict(
             [("3", "stein"), ("4", "train")]
-        )
+        ),
+        "nova-common": os_utils.PACKAGE_CODENAMES["nova-common"],
     }
 
     sync_cmd = [
@@ -161,6 +165,8 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
         "cinderv3",
         "cinder",
     ]
+
+    os_release_pkg = 'nova-common'
 
     workloadmgr_install_dir = "/usr/lib/python3/dist-packages/workloadmgr"
 
@@ -340,3 +346,7 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
                 "application not licensed; please run 'create-license' action",
             )
         return None, None
+
+    @classmethod
+    def trilio_version_package(cls):
+        return 'workloadmgr'
