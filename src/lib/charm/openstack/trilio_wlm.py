@@ -350,3 +350,30 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
     @classmethod
     def trilio_version_package(cls):
         return 'workloadmgr'
+
+
+class TrilioWLMCharmUssuri40(TrilioWLMCharm):
+
+    # First release supported
+    release = "ussuri"
+    trilio_release = "4.0"
+    python_version = 3
+
+    packages = [
+        "linux-image-virtual",  # Used for libguestfs supermin appliance
+        "nova-common",
+        "workloadmgr",
+        "python3-workloadmgrclient",
+        "python3-contegoclient",
+        "python3-glanceclient",
+        "python3-neutronclient",
+        "python3-apt",
+        "python3-retrying",
+    ]
+
+
+class TrilioWLMCharmUssuri41(TrilioWLMCharmUssuri40):
+
+    # First release supported
+    release = "ussuri"
+    trilio_release = "4.1"
