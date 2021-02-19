@@ -105,7 +105,7 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
     api_paste_ini = "/etc/workloadmgr/api-paste.ini"
     alembic_ini = "/etc/workloadmgr/alembic.ini"
 
-    release = "train"
+    release = "stein"
     trilio_release = "4.0"
 
     # List of packages to install for this charm

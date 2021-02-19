@@ -166,12 +166,16 @@ applications:
   trilio-dm-api:
     charm: cs:~openstack-charmers-next/trilio-dm-api
     num_units: 1
+    options:
+      openstack-origin: cloud:bionic-stein
   trilio-horizon-plugin:
     charm: cs:~openstack-charmers-next/trilio-horizon-plugin
   trilio-wlm:
     charm: ../../../trilio-wlm
     series: bionic
     num_units: 1
+    options:
+      openstack-origin: cloud:bionic-stein
   ceph-mon:
     charm: cs:~openstack-charmers-next/ceph-mon
     num_units: 3
