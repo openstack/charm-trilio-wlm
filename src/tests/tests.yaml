@@ -2,15 +2,6 @@ charm_name: trilio-wlm
 tests:
   - zaza.openstack.charm_tests.trilio.tests.TrilioWLMTest
 configure:
-  - workaround:
-    - zaza.openstack.charm_tests.trilio.setup.python2_workaround
-    - zaza.openstack.charm_tests.trilio.setup.basic_setup
-    - zaza.openstack.charm_tests.vault.setup.auto_initialize
-    - zaza.openstack.charm_tests.glance.setup.add_cirros_image
-    - zaza.openstack.charm_tests.glance.setup.add_lts_image
-    - zaza.openstack.charm_tests.neutron.setup.basic_overcloud_network
-    - zaza.openstack.charm_tests.nova.setup.create_flavors
-    - zaza.openstack.charm_tests.nova.setup.manage_ssh_key
   - zaza.openstack.charm_tests.trilio.setup.basic_setup
   - zaza.openstack.charm_tests.vault.setup.auto_initialize
   - zaza.openstack.charm_tests.glance.setup.add_cirros_image
@@ -23,8 +14,8 @@ gate_bundles:
   - bionic-stein-41
   - bionic-train-40
   - bionic-train-41
-  - workaround: bionic-ussuri-41
-  - workaround: focal-ussuri-41
+  - bionic-ussuri-41
+  - focal-ussuri-41
   - bionic-queens-40
   - bionic-queens-41
 smoke_bundles:
