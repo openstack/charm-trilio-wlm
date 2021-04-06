@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import collections
+import copy
 import subprocess
 
 import charmhelpers.core.hookenv as hookenv
@@ -33,6 +34,14 @@ def _get_internal_url(identity_service, service):
     if service in ep_catalog:
         return ep_catalog.get(service)["internal"]
     return None
+
+
+@charms_openstack.adapters.config_property
+def translated_backup_target_type(cls):
+    _type = hookenv.config("backup-target-type").lower()
+    if _type == "experimental-s3":
+        return 's3'
+    return _type
 
 
 @charms_openstack.adapters.adapter_property("identity-service")
@@ -104,14 +113,12 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
     workloadmgr_conf = "/etc/workloadmgr/workloadmgr.conf"
     api_paste_ini = "/etc/workloadmgr/api-paste.ini"
     alembic_ini = "/etc/workloadmgr/alembic.ini"
+    object_store_conf = "/etc/tvault-object-store/tvault-object-store.conf"
 
     release = "stein"
     trilio_release = "4.0"
 
-    # List of packages to install for this charm
-    # NOTE(jamespage): nova-common ensures a consistent UID is use
-    # for the nova user.
-    packages = [
+    base_packages = [
         "linux-image-virtual",  # Used for libguestfs supermin appliance
         "nova-common",
         "workloadmgr",
@@ -175,6 +182,29 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
     def __init__(self, release=None, **kwargs):
         super().__init__(release="stein", **kwargs)
 
+    @property
+    def backup_target_type(self):
+        # The main purpose of this property is to translate experimental-s3
+        # to s3 and s3 to UNKNOWN. This forces the deployer to
+        # use 'experimental-s3' for s3 support but the code can stay clean and
+        # refer to s3.
+        _type = hookenv.config("backup-target-type").lower()
+        if _type == 'experimental-s3':
+            return 's3'
+        if _type == 'nfs':
+            return 'nfs'
+        return 'UNKNOWN'
+
+    # List of packages to install for this charm
+    # NOTE(jamespage): nova-common ensures a consistent UID is use
+    # for the nova user.
+    @property
+    def packages(self):
+        _pkgs = copy.deepcopy(self.base_packages)
+        if self.backup_target_type == 's3':
+            _pkgs.append('python3-s3-fuse-plugin')
+        return _pkgs
+
     def get_amqp_credentials(self):
         return ("triliowlm", "triliowlm")
 
@@ -206,22 +236,28 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
     def services(self):
         """Determine the services associated with this class
         """
-        if reactive.flags.is_flag_set("ha.available"):
-            # Stop managing wlm-cron service as it needs to be single
+        _svcs = ["wlm-api", "wlm-scheduler", "wlm-workloads"]
+        if not reactive.flags.is_flag_set("ha.available"):
+            # Only manage wlm-cron service when running solo as an
             # instance across the cluster which will be managed by
             # corosync and pacemaker
-            return ["wlm-api", "wlm-scheduler", "wlm-workloads"]
-        return ["wlm-api", "wlm-scheduler", "wlm-workloads", "wlm-cron"]
+            _svcs.append("wlm-cron")
+        if self.backup_target_type == 's3':
+            _svcs.append('tvault-object-store')
+        return _svcs
 
     @property
     def restart_map(self):
         """Generate the restart map for this service
         """
-        return {
+        _restart_map = {
             self.workloadmgr_conf: self.services,
             self.api_paste_ini: ["wlm-api"],
             self.alembic_ini: [],
         }
+        if self.backup_target_type == 's3':
+            _restart_map[self.object_store_conf] = ['tvault-object-store']
+        return _restart_map
 
     def configure_ha_resources(self, hacluster):
         """Inform the ha subordinate about each service it should manage.
@@ -328,8 +364,25 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
 
     def custom_assess_status_check(self):
         """Check required configuration options are set"""
-        if not hookenv.config("nfs-shares"):
-            return "blocked", "nfs-shares configuration not set"
+        check_config_set = []
+        if self.backup_target_type == "nfs":
+            check_config_set = ['nfs-shares']
+        elif self.backup_target_type == "s3":
+            check_config_set = [
+                "tv-s3-secret-key",
+                "tv-s3-access-key",
+                "tv-s3-region-name",
+                "tv-s3-bucket",
+                "tv-s3-endpoint-url"]
+        unset_config = [c for c in check_config_set if not hookenv.config(c)]
+        if unset_config:
+            return "blocked", "{} configuration not set".format(
+                ', '.join(unset_config))
+        # For s3 support backup-target-type should be set to 'experimental-s3'
+        # as s3 support is pre-production. The self.backup_target_type
+        # property will do any transaltion needed.
+        if self.backup_target_type not in ["nfs", "s3"]:
+            return "blocked", "Backup target type not supported"
         return None, None
 
     def custom_assess_status_last_check(self):
@@ -359,7 +412,7 @@ class TrilioWLMCharmUssuri40(TrilioWLMCharm):
     trilio_release = "4.0"
     python_version = 3
 
-    packages = [
+    base_packages = [
         "linux-image-virtual",  # Used for libguestfs supermin appliance
         "nova-common",
         "workloadmgr",
