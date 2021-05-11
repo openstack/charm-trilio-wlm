@@ -62,3 +62,8 @@ options:
     type: string
     default:
     description: S3 endpoint URL
+  trustee-role:
+    type: string
+    default: member
+    description: |
+       Workload manager trustee role.

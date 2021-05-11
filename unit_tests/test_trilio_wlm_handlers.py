@@ -106,7 +106,8 @@ class TestDmapiHandlers(test_utils.PatchHelper):
             ),
             "init_db": ("config.rendered",),
             "cluster_connected": ("ha.connected",),
-            "request_endpoint_notification": ("identity-service.connected",),
+            "register_endpoints_and_request_notification": (
+                "identity-service.connected",),
         }
         when_not_patterns = {}
         # check the when hooks are attached to the expected functions
@@ -140,8 +141,20 @@ class TestDmapiHandlers(test_utils.PatchHelper):
         wlm_charm.render_with_interfaces.assert_called_once_with((args,))
         wlm_charm.assess_status.assert_called_once_with()
 
-    def test_register_endpoint_notification(self):
+    def test_register_endpoints_and_request_notification(self):
         wlm_charm = mock.MagicMock()
+        _service_type = "workloadmgr"
+        _region = "RegionOne"
+        _public_url = "http://trilio-wlm-public"
+        _internal_url = "http://trilio-wlm-internal"
+        _admin_url = "http://trilio-wlm-admin"
+        _trustee_role = "_trustee_role_"
+        wlm_charm.service_type = _service_type
+        wlm_charm.region = _region
+        wlm_charm.public_url = _public_url
+        wlm_charm.internal_url = _internal_url
+        wlm_charm.admin_url = _admin_url
+        wlm_charm.options.trustee_role = _trustee_role
         self.patch_object(
             handlers.charm, "provide_charm_instance", new=mock.MagicMock()
         )
@@ -149,7 +162,16 @@ class TestDmapiHandlers(test_utils.PatchHelper):
         self.provide_charm_instance().__exit__.return_value = None
         wlm_charm.required_services = ["foo", "bar"]
         identity_service = mock.MagicMock()
-        handlers.request_endpoint_notification(identity_service)
+        handlers.register_endpoints_and_request_notification(
+            identity_service)
         identity_service.request_notification.assert_called_once_with(
             ["foo", "bar"]
+        )
+        identity_service.register_endpoints.assert_called_once_with(
+            _service_type,
+            _region,
+            _public_url,
+            _internal_url,
+            _admin_url,
+            requested_roles=[_trustee_role]
         )
