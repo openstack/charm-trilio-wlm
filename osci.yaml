@@ -12,6 +12,7 @@
       - bionic-ussuri-41_trilio-wlm
       - bionic-train-41_trilio-wlm
       - focal-ussuri-41_trilio-wlm
+      - bionic-train-41-s3_trilio-wlm
     vars:
       needs_charm_build: true
       charm_build_name: trilio-wlm
@@ -70,3 +71,9 @@
     dependencies: *smoke-jobs
     vars:
       tox_extra_args: focal-ussuri-41
+- job:
+    name: bionic-train-41-s3_trilio-wlm
+    parent: func-target
+    dependencies: *smoke-jobs
+    vars:
+      tox_extra_args: bionic-train-41-s3

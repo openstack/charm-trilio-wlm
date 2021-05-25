@@ -1,4 +1,3 @@
-local_overlay_enabled: False
 variables:
   openstack-origin: &openstack-origin 'cloud:bionic-train'
   triliovault-pkg-source: &triliovault-pkg-source 'deb [trusted=yes] https://apt.fury.io/triliodata-4-1/ /'
@@ -142,7 +141,6 @@ applications:
       glance-api-version: 2
   keystone:
     charm: cs:~openstack-charmers-next/keystone
-    series: bionic
     num_units: 1
     options:
       openstack-origin: *openstack-origin
