@@ -22,7 +22,6 @@ charm.use_defaults(
     "charm.installed",
     "amqp.connected",
     "shared-db.connected",
-    "identity-service.connected",
     "identity-service.available",  # enables SSL support
     "config.changed",
     "update-status",
@@ -60,10 +59,22 @@ def cluster_connected(hacluster):
 
 
 @reactive.when("identity-service.connected")
-def request_endpoint_notification(identity_service):
-    """Request notification about endpoint changes"""
-    with charm.provide_charm_instance() as charm_class:
-        identity_service.request_notification(charm_class.required_services)
+def register_endpoints_and_request_notification(identity_service):
+    """Register endpoints and request notification.
+
+    Note: In order to pass the requested role(s), we must override the default
+    openstack-api layer setup_endpoint_connection version of this handler.
+    """
+    with charm.provide_charm_instance() as instance:
+        identity_service.request_notification(instance.required_services)
+        identity_service.register_endpoints(
+            instance.service_type,
+            instance.region,
+            instance.public_url,
+            instance.internal_url,
+            instance.admin_url,
+            requested_roles=[instance.options.trustee_role])
+        instance.assess_status()
 
 
 @reactive.when_any("config.changed.triliovault-pkg-source",
