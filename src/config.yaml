@@ -41,6 +41,28 @@ options:
     type: string
     default:
     description: NFS Shares mount source path
+  max-wait-for-upload:
+    type: int
+    default: 48
+    description: |
+      The amount of time(in hrs) that snapshot upload
+      operation should wait for the upload
+      This option is ignored if Trilio is before 4.1.94
+  client-retry-limit:
+    type: int
+    default: 3
+    description: |
+      This is the number of times wlm will try to connect to
+      OpenStack services.
+      This option is ignored if Trilio is before 4.1.94
+  misfire-grace-time:
+    type: int
+    default: 600
+    description: |
+      misfire_grace_time is the grace time in which the global job
+      scheduler will consider to trigger the missed snapshots
+      The value is in seconds
+      This option is ignored if Trilio is before 4.1.94
   # UNSUPPORTED
   tv-s3-secret-key:
     type: string
