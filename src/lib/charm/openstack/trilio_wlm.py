@@ -257,6 +257,9 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
         }
         if self.backup_target_type == 's3':
             _restart_map[self.object_store_conf] = ['tvault-object-store']
+            _restart_map[
+                charms_openstack.plugins.trilio.S3_SSL_CERT_FILE] = [
+                    'tvault-object-store']
         return _restart_map
 
     def configure_ha_resources(self, hacluster):
