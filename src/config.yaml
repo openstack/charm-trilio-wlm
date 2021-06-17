@@ -32,7 +32,7 @@ options:
     type: string
     default: nfs
     description: |
-      Type of backup target. Valid types - nfs
+      Type of backup target. Valid types - nfs, s3
   nfs-options:
     type: string
     default: nolock,soft,timeo=180,intr,lookupcache=none
@@ -63,7 +63,6 @@ options:
       scheduler will consider to trigger the missed snapshots
       The value is in seconds
       This option is ignored if Trilio is before 4.1.94
-  # UNSUPPORTED
   tv-s3-secret-key:
     type: string
     default:
