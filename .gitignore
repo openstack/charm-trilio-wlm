@@ -8,3 +8,4 @@ test-charm/
 .stestr
 .coverage
 cover
+*.swp
