@@ -16,3 +16,8 @@ ghost-share:
       description: Comma separated nfs-shares configuration option from secondary deployment. NFS shares must be provided in the same order as the nfs-shares configuration option for the local deployment.
   required:
     - nfs-shares
+post-upgrade-configuration:
+  description: |
+    If the Trilio packages were upgraded outside of the charms control then run
+    this action to rerender configuration files and run any upgrade tasks such
+    as database migrations.

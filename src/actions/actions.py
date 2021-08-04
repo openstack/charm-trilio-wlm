@@ -66,12 +66,23 @@ def ghost_share(*args):
         trilio_wlm_charm._assess_status()
 
 
+def post_upgrade_configuration(*args):
+    """Run setup after Trilio upgrade.
+    """
+    with charms_openstack.charm.provide_charm_instance() as trilio_wlm_charm:
+        trilio_wlm_charm.render_all_configs()
+        if hookenv.is_leader():
+            trilio_wlm_charm.do_trilio_upgrade_db_migration()
+        trilio_wlm_charm._assess_status()
+
+
 # Actions to function mapping, to allow for illegal python action names that
 # can map to a python function.
 ACTIONS = {
     "create-cloud-admin-trust": create_cloud_admin_trust,
     "create-license": create_license,
     "ghost-share": ghost_share,
+    "post-upgrade-configuration": post_upgrade_configuration,
 }
 
 
