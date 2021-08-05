@@ -66,13 +66,15 @@ def ghost_share(*args):
         trilio_wlm_charm._assess_status()
 
 
-def post_upgrade_configuration(*args):
+def update_trilio(*args):
     """Run setup after Trilio upgrade.
     """
     with charms_openstack.charm.provide_charm_instance() as trilio_wlm_charm:
-        trilio_wlm_charm.render_all_configs()
-        if hookenv.is_leader():
-            trilio_wlm_charm.do_trilio_upgrade_db_migration()
+        interfaces = ["shared-db", "identity-service", "amqp"]
+        endpoints = [
+            reactive.relations.endpoint_from_flag("{}.available".format(i))
+            for i in interfaces]
+        trilio_wlm_charm.run_trilio_upgrade(endpoints)
         trilio_wlm_charm._assess_status()
 
 
@@ -82,7 +84,7 @@ ACTIONS = {
     "create-cloud-admin-trust": create_cloud_admin_trust,
     "create-license": create_license,
     "ghost-share": ghost_share,
-    "post-upgrade-configuration": post_upgrade_configuration,
+    "update-trilio": update_trilio,
 }
 
 
