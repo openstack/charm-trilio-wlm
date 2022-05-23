@@ -9,3 +9,4 @@ test-charm/
 .coverage
 cover
 *.swp
+*.charm
