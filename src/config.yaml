@@ -93,3 +93,16 @@ options:
     default: member
     description: |
        Workload manager trustee role.
+  progress-tracking-update-interval:
+    type: int
+    default: 1200
+    description: |
+      Number of seconds to wait for progress tracking file updated before
+      we call contego crash
+      This option is ignored if Trilio is before 4.2
+  process-timeout:
+    type: int
+    default: 300
+    description: |
+      Process timeout in seconds, used in file-search tool
+      This option is ignored if Trilio is before 4.2

@@ -102,9 +102,9 @@ class TrilioWLMCharmRelationAdapters(
     }
 
 
-class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
-                     charms_openstack.plugins.TrilioVaultCharmGhostAction):
+class TrilioWLMBaseCharm(charms_openstack.plugins.TrilioVaultCharm):
 
+    abstract_class = True
     # Internal name of charm
     service_name = name = "trilio-wlm"
 
@@ -115,9 +115,6 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
     alembic_ini = "/etc/workloadmgr/alembic.ini"
     object_store_conf = "/etc/tvault-object-store/tvault-object-store.conf"
 
-    release = "stein"
-    trilio_release = "4.0"
-
     base_packages = [
         "linux-image-virtual",  # Used for libguestfs supermin appliance
         "nova-common",
@@ -126,6 +123,8 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
         "python3-contegoclient",
         "python-apt",
     ]
+
+    python_version = 3
 
     # Ensure we use the right package for versioning
     version_package = "workloadmgr"
@@ -407,12 +406,24 @@ class TrilioWLMCharm(charms_openstack.plugins.TrilioVaultCharm,
         return 'workloadmgr'
 
 
-class TrilioWLMCharmUssuri40(TrilioWLMCharm):
+class TrilioWLMCharmStein41(
+    TrilioWLMBaseCharm, charms_openstack.plugins.TrilioVaultCharmGhostAction
+):
+    release = "stein"
+    trilio_release = "4.1"
+    python_version = 2
 
-    # First release supported
-    release = "ussuri"
-    trilio_release = "4.0"
-    python_version = 3
+
+class TrilioWLMCharmStein42(
+    TrilioWLMBaseCharm, charms_openstack.plugins.TrilioVault42CharmGhostAction
+):
+    release = "stein"
+    trilio_release = "4.2"
+
+
+class TrilioWLMCharmUssuri41Base(TrilioWLMBaseCharm):
+
+    abstract_class = True
 
     base_packages = [
         "linux-image-virtual",  # Used for libguestfs supermin appliance
@@ -427,8 +438,19 @@ class TrilioWLMCharmUssuri40(TrilioWLMCharm):
     ]
 
 
-class TrilioWLMCharmUssuri41(TrilioWLMCharmUssuri40):
-
+class TrilioWLMCharmUssuri41(
+    TrilioWLMCharmUssuri41Base,
+    charms_openstack.plugins.TrilioVaultCharmGhostAction
+):
     # First release supported
     release = "ussuri"
     trilio_release = "4.1"
+
+
+class TrilioWLMCharmUssuri42(
+    TrilioWLMCharmUssuri41Base,
+    charms_openstack.plugins.TrilioVault42CharmGhostAction
+):
+    # First release supported
+    release = "ussuri"
+    trilio_release = "4.2"

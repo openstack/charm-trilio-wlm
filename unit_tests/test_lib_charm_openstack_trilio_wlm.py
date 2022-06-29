@@ -18,14 +18,84 @@ import mock
 import charm.openstack.trilio_wlm as trilio_wlm
 import charms_openstack.test_utils as test_utils
 
+import charms_openstack.charm.core as co_core
+import charms_openstack.plugins.trilio as co_trilio
+
 
 class Helper(test_utils.PatchHelper):
     def setUp(self):
         super().setUp()
-        self.patch_release(trilio_wlm.TrilioWLMCharm.release)
+        self.patch_release(trilio_wlm.TrilioWLMBaseCharm.release)
 
 
-class TestTrilioWLMCharmAdapterProperties(Helper):
+class TestTrilioWLM(test_utils.PatchHelper):
+
+    def test_selector(self):
+        _safe_gcif = co_core._get_charm_instance_function
+        save_releases = co_trilio._trilio_releases
+        co_core._get_charm_instance_function = None
+        self.patch_object(co_trilio.fetch.apt_pkg, 'version_compare')
+
+        def _version_compare(ver1, ver2):
+            if float(ver1) > float(ver2):
+                return 1
+            elif float(ver1) < float(ver2):
+                return -1
+            else:
+                return 0
+
+        self.version_compare.side_effect = _version_compare
+        co_trilio.make_trilio_get_charm_instance_handler()
+
+        test_endpoint = 'nfs://10.0.0.10:2049/mypath'
+        pre_42_encode = 'bmZzOi8vMTAuMC4wLjEwOjIwNDkvbXlwYXRo'
+        post_42_encode = 'L215cGF0aA=='
+
+        charm_class = co_core.get_charm_instance(release='stein_4.1')
+        self.assertEqual(
+            charm_class.python_version,
+            2)
+        self.assertIn('python3-workloadmgrclient', charm_class.base_packages)
+        self.assertNotIn('python3-retrying', charm_class.base_packages)
+        self.assertEqual(
+            charm_class._encode_endpoint(test_endpoint),
+            pre_42_encode)
+
+        charm_class = co_core.get_charm_instance(release='stein_4.2')
+        self.assertEqual(
+            charm_class.python_version,
+            3)
+        self.assertIn('python3-workloadmgrclient', charm_class.base_packages)
+        self.assertNotIn('python3-retrying', charm_class.base_packages)
+        self.assertEqual(
+            charm_class._encode_endpoint(test_endpoint),
+            post_42_encode)
+
+        charm_class = co_core.get_charm_instance(release='ussuri_4.1')
+        self.assertEqual(
+            charm_class.python_version,
+            3)
+        self.assertIn('python3-workloadmgrclient', charm_class.base_packages)
+        self.assertIn('python3-retrying', charm_class.base_packages)
+        self.assertEqual(
+            charm_class._encode_endpoint(test_endpoint),
+            pre_42_encode)
+
+        charm_class = co_core.get_charm_instance(release='ussuri_4.2')
+        self.assertEqual(
+            charm_class.python_version,
+            3)
+        self.assertIn('python3-workloadmgrclient', charm_class.base_packages)
+        self.assertIn('python3-retrying', charm_class.base_packages)
+        self.assertEqual(
+            charm_class._encode_endpoint(test_endpoint),
+            post_42_encode)
+
+        co_trilio._trilio_releases = save_releases
+        co_core._get_charm_instance_function = _safe_gcif
+
+
+class TestTrilioWLMCharmStein41AdapterProperties(Helper):
 
     _endpoints = {
         "neutron": {"internal": "http://neutron-controller"},
@@ -58,7 +128,7 @@ class TestTrilioWLMCharmAdapterProperties(Helper):
         )
 
 
-class TestTrilioWLMCharmTrustActions(Helper):
+class TestTrilioWLMCharmStein41TrustActions(Helper):
     def test_create_trust(self):
         identity_service = mock.MagicMock()
         identity_service.admin_domain_id.return_value = (
@@ -74,7 +144,7 @@ class TestTrilioWLMCharmTrustActions(Helper):
         self.patch_object(trilio_wlm.subprocess, "check_call")
         self.patch_object(trilio_wlm.hookenv, "config")
         self.config.return_value = "TestRegionA"
-        trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
+        trilio_wlm_charm = trilio_wlm.TrilioWLMCharmStein41()
         trilio_wlm_charm.create_trust(identity_service, "test-ca-password")
         self.config.assert_called_with("region")
         self.check_call.assert_called_with(
@@ -106,12 +176,12 @@ class TestTrilioWLMCharmTrustActions(Helper):
     def test_create_trust_not_ready(self):
         identity_service = mock.MagicMock()
         identity_service.base_data_complete.return_value = False
-        trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
+        trilio_wlm_charm = trilio_wlm.TrilioWLMCharmStein41()
         with self.assertRaises(trilio_wlm.IdentityServiceIncompleteException):
             trilio_wlm_charm.create_trust(identity_service, "test-ca-password")
 
 
-class TestTrilioWLMCharmLicenseActions(Helper):
+class TestTrilioWLMCharmStein41LicenseActions(Helper):
     def test_create_license(self):
         identity_service = mock.MagicMock()
         identity_service.service_domain_id.return_value = (
@@ -131,7 +201,7 @@ class TestTrilioWLMCharmLicenseActions(Helper):
         self.patch_object(trilio_wlm.hookenv, "resource_get")
         self.config.return_value = "TestRegionA"
         self.resource_get.return_value = "/var/lib/charm/license.lic"
-        trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
+        trilio_wlm_charm = trilio_wlm.TrilioWLMCharmStein41()
         trilio_wlm_charm.create_license(identity_service)
         self.config.assert_called_with("region")
         self.resource_get.assert_called_with("license")
@@ -164,7 +234,7 @@ class TestTrilioWLMCharmLicenseActions(Helper):
         identity_service.base_data_complete.return_value = False
         self.patch_object(trilio_wlm.hookenv, "resource_get")
         self.resource_get.return_value = False
-        trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
+        trilio_wlm_charm = trilio_wlm.TrilioWLMCharmStein41()
         with self.assertRaises(trilio_wlm.LicenseFileMissingException):
             trilio_wlm_charm.create_license(identity_service)
 
@@ -173,6 +243,6 @@ class TestTrilioWLMCharmLicenseActions(Helper):
         identity_service.base_data_complete.return_value = False
         self.patch_object(trilio_wlm.hookenv, "resource_get")
         self.resource_get.return_value = "/var/lib/charm/license.lic"
-        trilio_wlm_charm = trilio_wlm.TrilioWLMCharm()
+        trilio_wlm_charm = trilio_wlm.TrilioWLMCharmStein41()
         with self.assertRaises(trilio_wlm.IdentityServiceIncompleteException):
             trilio_wlm_charm.create_license(identity_service)

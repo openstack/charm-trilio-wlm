@@ -6,7 +6,7 @@ variables:
   mysql-charm-channel: &mysql-charm-channel '5.7/edge'
   vault-charm-channel: &vault-charm-channel '1.7/edge'
   trilio-charm-channel: &trilio-charm-channel 'latest/stable'
-  triliovault-pkg-source: &triliovault-pkg-source 'deb [trusted=yes] https://apt.fury.io/triliodata-4-1/ /'
+  triliovault-pkg-source: &triliovault-pkg-source 'deb [trusted=yes] https://apt.fury.io/triliodata-4-2/ /'
 
 
 series: &series bionic
