@@ -1,7 +1,7 @@
 variables:
-  openstack-origin: &openstack-origin distro
-  openstack-charm-channel: &openstack-charm-channel 'ussuri/edge'
-  ceph-charm-channel: &ceph-charm-channel 'octopus/edge'
+  openstack-origin: &openstack-origin 'cloud:focal-wallaby'
+  openstack-charm-channel: &openstack-charm-channel 'wallaby/edge'
+  ceph-charm-channel: &ceph-charm-channel 'pacific/edge'
   rabbit-charm-channel: &rabbit-charm-channel '3.9/edge'
   mysql-charm-channel: &mysql-charm-channel '8.0/edge'
   vault-charm-channel: &vault-charm-channel '1.7/edge'

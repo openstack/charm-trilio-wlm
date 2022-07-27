@@ -11,6 +11,7 @@
       - focal-ussuri-41_trilio-wlm
       - focal-ussuri-42_trilio-wlm
       - focal-ussuri-42-s3_trilio-wlm
+      - focal-wallaby-42_trilio-wlm
     vars:
       needs_charm_build: true
       charm_build_name: trilio-wlm
@@ -32,6 +33,13 @@
       - focal-ussuri-42_trilio-wlm
     vars:
       tox_extra_args: focal-ussuri-42-s3
+- job:
+    name: focal-wallaby-42_trilio-wlm
+    parent: func-target
+    dependencies:
+      - focal-ussuri-42-s3_trilio-wlm
+    vars:
+      tox_extra_args: focal-wallaby-42
 - job:
     name: bionic-ussuri-42_trilio-wlm
     parent: func-target
