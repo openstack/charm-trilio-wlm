@@ -31,6 +31,10 @@ gate_bundles:
   - bionic-queens-41
 smoke_bundles:
   - focal-ussuri-42
+
+configure_options:
+  configure_gateway_ext_port_use_juju_wait: false
+
 target_deploy_status:
   vault:
     workload-status: blocked

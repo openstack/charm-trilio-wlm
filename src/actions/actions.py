@@ -38,8 +38,8 @@ def create_cloud_admin_trust(*args):
     """Create trust relation between Trilio WLM and Cloud Admin
     """
     cloud_admin_password = hookenv.action_get("password")
-    identity_service = reactive.RelationBase.from_state(
-        "identity-service.available"
+    identity_service = reactive.endpoint_from_name(
+        "identity-service"
     )
     with charms_openstack.charm.provide_charm_instance() as trilio_wlm_charm:
         trilio_wlm_charm.create_trust(identity_service, cloud_admin_password)
@@ -49,8 +49,8 @@ def create_cloud_admin_trust(*args):
 def create_license(*args):
     """Create license for operation of TrilioVault
     """
-    identity_service = reactive.RelationBase.from_state(
-        "identity-service.available"
+    identity_service = reactive.endpoint_from_name(
+        "identity-service"
     )
     with charms_openstack.charm.provide_charm_instance() as trilio_wlm_charm:
         trilio_wlm_charm.create_license(identity_service)
@@ -70,10 +70,13 @@ def update_trilio(*args):
     """Run setup after Trilio upgrade.
     """
     with charms_openstack.charm.provide_charm_instance() as trilio_wlm_charm:
-        interfaces = ["shared-db", "identity-service", "amqp"]
+        interfaces = ["shared-db", "amqp"]
         endpoints = [
             reactive.relations.endpoint_from_flag("{}.available".format(i))
             for i in interfaces]
+        # identity-service is of type reactive.Endpoint rather than
+        # reactive.RelationBase and needs a different method to instantiate it.
+        endpoints.append(reactive.endpoint_from_name("identity-service"))
         trilio_wlm_charm.run_trilio_upgrade(endpoints)
         trilio_wlm_charm._assess_status()
 
@@ -89,6 +92,7 @@ ACTIONS = {
 
 
 def main(args):
+    hookenv._run_atstart()
     action_name = os.path.basename(args[0])
     try:
         action = ACTIONS[action_name]
@@ -99,6 +103,7 @@ def main(args):
             action(args)
         except Exception as e:
             hookenv.function_fail(str(e))
+    hookenv._run_atexit()
 
 
 if __name__ == "__main__":
