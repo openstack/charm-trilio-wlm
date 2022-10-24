@@ -285,7 +285,7 @@ applications:
     options:
       triliovault-pkg-source: *triliovault-pkg-source
   trilio-wlm:
-    charm: ../../../trilio-wlm.charm
+    charm: ../../../trilio-wlm_ubuntu-20.04-amd64.charm
     num_units: 1
     options:
       openstack-origin: *openstack-origin
